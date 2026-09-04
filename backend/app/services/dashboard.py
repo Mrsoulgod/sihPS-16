@@ -117,6 +117,8 @@ class DashboardService:
             compensation_assessed_cr=round(total_assessed_cr, 2),
             compensation_disbursed_cr=round(total_disbursed_cr, 2),
             overall_disbursement_percent=disb_pct,
+            affected_families=total_pafs,
+            displaced_families=total_pdfs,
             total_paf_count=total_pafs,
             total_pdf_count=total_pdfs,
             avg_randr_completion_percent=avg_randr,

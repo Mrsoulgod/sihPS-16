@@ -39,8 +39,8 @@ export function AcquisitionProgressCard({ data }: AcquisitionProgressCardProps) 
       <div className="mt-5">
         <div className="flex justify-between items-center text-xs font-medium text-slate-700 mb-1.5">
           <span>Acquisition & Possession Corridor Split</span>
-          <span className="text-slate-500 font-mono">
-            {data.land_acquired_acres.toLocaleString()} / {data.land_proposed_acres.toLocaleString()} Acres
+          <span className="text-slate-600 font-mono text-xs">
+            Acquired: <strong className="text-[#138808]">{data.land_acquired_acres.toLocaleString()} Ac</strong> / Proposed: {data.land_proposed_acres.toLocaleString()} Ac
           </span>
         </div>
         

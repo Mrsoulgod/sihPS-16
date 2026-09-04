@@ -15,6 +15,8 @@ class DashboardKpiSummary(BaseModel):
     compensation_assessed_cr: float
     compensation_disbursed_cr: float
     overall_disbursement_percent: float
+    affected_families: int
+    displaced_families: int
     total_paf_count: int
     total_pdf_count: int
     avg_randr_completion_percent: float

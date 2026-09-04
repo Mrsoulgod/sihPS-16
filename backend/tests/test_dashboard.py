@@ -45,11 +45,16 @@ async def test_dashboard_central_officer_national_scope():
         # KPIs verification
         kpis = data["kpis"]
         assert kpis["total_projects"] == 5
-        assert kpis["total_land_proposed_acres"] > 1000.0
-        assert kpis["total_land_acquired_acres"] > 0
-        assert 0 <= kpis["overall_acquisition_percent"] <= 100
+        assert kpis["total_land_proposed_acres"] == 1690.0
+        assert kpis["total_land_acquired_acres"] == 1435.0
+        assert kpis["total_land_acquired_acres"] <= kpis["total_land_proposed_acres"]
+        expected_pct = round((kpis["total_land_acquired_acres"] / kpis["total_land_proposed_acres"]) * 100, 1)
+        assert kpis["overall_acquisition_percent"] == expected_pct
         assert kpis["compensation_assessed_cr"] > 1000.0
-        assert kpis["total_paf_count"] > 2000
+        assert kpis["affected_families"] == 3510
+        assert kpis["displaced_families"] == 915
+        assert kpis["total_paf_count"] == 3510
+        assert kpis["total_pdf_count"] == 915
 
         # Acquisition overview
         acq = data["acquisition_overview"]

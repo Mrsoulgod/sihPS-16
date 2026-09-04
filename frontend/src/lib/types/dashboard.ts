@@ -7,6 +7,8 @@ export interface DashboardKpiSummary {
   compensation_assessed_cr: number;
   compensation_disbursed_cr: number;
   overall_disbursement_percent: number;
+  affected_families: number;
+  displaced_families: number;
   total_paf_count: number;
   total_pdf_count: number;
   avg_randr_completion_percent: number;
