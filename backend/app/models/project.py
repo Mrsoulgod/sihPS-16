@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from decimal import Decimal
 from typing import List, Optional, Any, TYPE_CHECKING
 from sqlalchemy import String, Text, Numeric, Integer, Date, DateTime, ForeignKey
@@ -69,11 +69,19 @@ class ProjectStage(Base):
     stage_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    due_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     sla_deadline_days: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    assigned_role: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
+    assigned_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    comments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    required_documents: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
 
     # Relationships
     project: Mapped["Project"] = relationship("Project", back_populates="stages")
+    role: Mapped[Optional["Role"]] = relationship("Role")
+    assigned_user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[assigned_user_id])
 
 
 class StageTransitionHistory(Base):
@@ -87,6 +95,7 @@ class StageTransitionHistory(Base):
     decision: Mapped[str] = mapped_column(String(20), nullable=False)
     remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     snapshot_metrics_json: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     project: Mapped["Project"] = relationship("Project", back_populates="stage_history")
@@ -98,7 +107,10 @@ class WorkflowTask(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    parcel_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("land_parcels.id", ondelete="CASCADE"), nullable=True, index=True)
     task_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     assigned_role: Mapped[str] = mapped_column(String(36), ForeignKey("roles.id"), nullable=False, index=True)
     assigned_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False, index=True)
@@ -106,8 +118,10 @@ class WorkflowTask(Base):
     due_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     action_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     project: Mapped["Project"] = relationship("Project", back_populates="workflow_tasks")
+    parcel: Mapped[Optional["LandParcel"]] = relationship("LandParcel")
     role: Mapped["Role"] = relationship("Role")
     assigned_user: Mapped[Optional["User"]] = relationship("User", back_populates="assigned_tasks", foreign_keys=[assigned_user_id])

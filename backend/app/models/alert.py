@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime, timezone
 from typing import Optional, TYPE_CHECKING
-from sqlalchemy import String, Boolean, Text, ForeignKey
+from sqlalchemy import String, Boolean, Text, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,6 +23,7 @@ class Alert(Base):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     target_role: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("roles.id", ondelete="SET NULL"), nullable=True, index=True)
     is_resolved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
 
     # Relationships
     project: Mapped[Optional["Project"]] = relationship("Project", back_populates="alerts")

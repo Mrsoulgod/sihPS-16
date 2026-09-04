@@ -382,6 +382,9 @@ async def seed_all(session: AsyncSession) -> None:
     await seed_demo_users(session)
     await seed_projects(session)
     await seed_activity(session)
+    from app.seed.seed_phase4 import seed_stages_and_tasks, seed_parcels
+    await seed_stages_and_tasks(session)
+    await seed_parcels(session)
     await session.commit()
     logger.info("All seed data successfully applied.")
 
