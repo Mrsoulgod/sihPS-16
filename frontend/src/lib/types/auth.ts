@@ -1,10 +1,13 @@
-export type RoleCode =
-  | "ROLE_CENTRAL_OFFICER"
-  | "ROLE_STATE_OFFICER"
-  | "ROLE_DISTRICT_OFFICER"
-  | "ROLE_PROJECT_AGENCY"
-  | "ROLE_FIELD_OFFICER"
-  | "ROLE_ADMIN";
+export const RoleCode = {
+  CENTRAL_OFFICER: "ROLE_CENTRAL_OFFICER",
+  STATE_OFFICER: "ROLE_STATE_OFFICER",
+  DISTRICT_OFFICER: "ROLE_DISTRICT_OFFICER",
+  PROJECT_AGENCY: "ROLE_PROJECT_AGENCY",
+  FIELD_OFFICER: "ROLE_FIELD_OFFICER",
+  ADMIN: "ROLE_ADMIN",
+} as const;
+
+export type RoleCode = (typeof RoleCode)[keyof typeof RoleCode];
 
 export interface UserSummary {
   id: string;

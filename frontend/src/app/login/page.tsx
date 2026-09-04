@@ -22,7 +22,7 @@ export default function LoginPage() {
   const { login, user, isAuthenticated, logout, isLoading } = useAuth();
 
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
-  const [password, setPassword] = useState("Demo@123456");
+  const [password, setPassword] = useState("demo123");
   const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +38,7 @@ export default function LoginPage() {
         username_or_email: usernameOrEmail.trim(),
         password: password,
       });
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
       setFormError(err.message || "Invalid authentication credentials.");
     }
@@ -46,7 +46,7 @@ export default function LoginPage() {
 
   const handleSelectDemoAccount = (email: string) => {
     setUsernameOrEmail(email);
-    setPassword("Demo@123456");
+    setPassword("demo123");
     setFormError(null);
   };
 
@@ -97,8 +97,8 @@ export default function LoginPage() {
             <Button variant="outline" onClick={() => logout()}>
               Sign Out
             </Button>
-            <Button className="bg-emerald-700 hover:bg-emerald-800 text-white" onClick={() => router.push("/")}>
-              Continue to System Overview
+            <Button className="bg-emerald-700 hover:bg-emerald-800 text-white" onClick={() => router.push("/dashboard")}>
+              Continue to Command Dashboard
             </Button>
           </CardFooter>
         </Card>

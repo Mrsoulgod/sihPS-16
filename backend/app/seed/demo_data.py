@@ -10,6 +10,8 @@ from app.core.security import get_password_hash
 from app.models.role import Role
 from app.models.location import State, District, Tehsil, Village
 from app.models.user import User
+from app.models.project import Project
+from app.models.audit import AuditLog
 from app.models.enums import RoleCode
 
 logger = logging.getLogger(__name__)
@@ -54,6 +56,7 @@ async def seed_locations(session: AsyncSession) -> None:
         {"id": "DST-ALW", "state_id": "IN-RJ", "name": "Alwar", "lgd_code": "0802"},
         {"id": "DST-GUR", "state_id": "IN-HR", "name": "Gurugram", "lgd_code": "0601"},
         {"id": "DST-REW", "state_id": "IN-HR", "name": "Rewari", "lgd_code": "0602"},
+        {"id": "DST-DEL", "state_id": "IN-DL", "name": "North Delhi", "lgd_code": "0701"},
     ]
     for d in districts:
         existing = await session.get(District, d["id"])
@@ -166,11 +169,219 @@ async def seed_demo_users(session: AsyncSession) -> None:
     logger.info("Demo users seeded successfully.")
 
 
+async def seed_projects(session: AsyncSession) -> None:
+    """Seed benchmark national infrastructure projects."""
+    agency_stmt = select(User).where(User.username == "agency_officer")
+    agency_user = (await session.execute(agency_stmt)).scalar_one_or_none()
+    creator_id = agency_user.id if agency_user else None
+
+    if not creator_id:
+        admin_stmt = select(User).where(User.username == "admin_officer")
+        admin_user = (await session.execute(admin_stmt)).scalar_one_or_none()
+        creator_id = admin_user.id if admin_user else None
+
+    projects_data = [
+        {
+            "project_code": "PRJ-NH48-PKG4",
+            "title": "Delhi–Jaipur Expressway Expansion (NH-48 Package IV)",
+            "description": "Six-laning corridor expansion under Bharatmala Pariyojana covering Jaipur, Kotputli, and Behror revenue stretches.",
+            "sponsoring_ministry": "Ministry of Road Transport and Highways",
+            "implementing_agency": "National Highways Authority of India (NHAI)",
+            "current_stage": "COMPENSATION_DISBURSEMENT",
+            "primary_district_id": "DST-JAI",
+            "total_land_proposed_acres": Decimal("500.0000"),
+            "total_land_acquired_acres": Decimal("420.0000"),
+            "total_possession_acres": Decimal("395.0000"),
+            "estimated_budget_inr_cr": Decimal("1250.00"),
+            "compensation_assessed_cr": Decimal("620.00"),
+            "compensation_disbursed_cr": Decimal("570.00"),
+            "total_paf_count": 1240,
+            "total_pdf_count": 380,
+            "randr_completion_percent": Decimal("72.00"),
+            "risk_score": 68,
+            "created_by_user_id": creator_id,
+        },
+        {
+            "project_code": "PRJ-WDFC-ALW",
+            "title": "Western Dedicated Freight Corridor (Rewari–Alwar Section)",
+            "description": "Heavy-haul electric freight railway track acquisition across Haryana-Rajasthan border corridor.",
+            "sponsoring_ministry": "Ministry of Railways",
+            "implementing_agency": "Dedicated Freight Corridor Corporation of India (DFCCIL)",
+            "current_stage": "POSSESSION",
+            "primary_district_id": "DST-ALW",
+            "total_land_proposed_acres": Decimal("320.0000"),
+            "total_land_acquired_acres": Decimal("310.0000"),
+            "total_possession_acres": Decimal("295.0000"),
+            "estimated_budget_inr_cr": Decimal("850.00"),
+            "compensation_assessed_cr": Decimal("410.00"),
+            "compensation_disbursed_cr": Decimal("398.00"),
+            "total_paf_count": 650,
+            "total_pdf_count": 190,
+            "randr_completion_percent": Decimal("88.00"),
+            "risk_score": 24,
+            "created_by_user_id": creator_id,
+        },
+        {
+            "project_code": "PRJ-GUR-METRO",
+            "title": "Gurugram Metro Rail Rapid Transit Corridor Extension",
+            "description": "Rapid transit corridor extension connecting Millennium City Centre to Cyber City loop.",
+            "sponsoring_ministry": "Ministry of Housing and Urban Affairs",
+            "implementing_agency": "Delhi Metro Rail Corporation (DMRC)",
+            "current_stage": "LAND_IDENTIFICATION",
+            "primary_district_id": "DST-GUR",
+            "total_land_proposed_acres": Decimal("140.0000"),
+            "total_land_acquired_acres": Decimal("35.0000"),
+            "total_possession_acres": Decimal("0.0000"),
+            "estimated_budget_inr_cr": Decimal("2100.00"),
+            "compensation_assessed_cr": Decimal("85.00"),
+            "compensation_disbursed_cr": Decimal("20.00"),
+            "total_paf_count": 310,
+            "total_pdf_count": 85,
+            "randr_completion_percent": Decimal("15.00"),
+            "risk_score": 78,
+            "created_by_user_id": creator_id,
+        },
+        {
+            "project_code": "PRJ-DAK-REW",
+            "title": "Delhi–Amritsar–Katra Expressway (Haryana Spur)",
+            "description": "Access-controlled greenfield expressway connecting Delhi metropolitan ring to Rewari interchange.",
+            "sponsoring_ministry": "Ministry of Road Transport and Highways",
+            "implementing_agency": "National Highways Authority of India (NHAI)",
+            "current_stage": "AWARD",
+            "primary_district_id": "DST-REW",
+            "total_land_proposed_acres": Decimal("450.0000"),
+            "total_land_acquired_acres": Decimal("390.0000"),
+            "total_possession_acres": Decimal("340.0000"),
+            "estimated_budget_inr_cr": Decimal("1600.00"),
+            "compensation_assessed_cr": Decimal("520.00"),
+            "compensation_disbursed_cr": Decimal("480.00"),
+            "total_paf_count": 890,
+            "total_pdf_count": 260,
+            "randr_completion_percent": Decimal("65.00"),
+            "risk_score": 32,
+            "created_by_user_id": creator_id,
+        },
+        {
+            "project_code": "PRJ-MMLP-DEL",
+            "title": "Delhi Multi-Modal Logistics Park (MMLP Narela)",
+            "description": "State-of-the-art intermodal freight logistics hub with direct rail and highway connectivity.",
+            "sponsoring_ministry": "Ministry of Road Transport and Highways",
+            "implementing_agency": "National Highways Logistics Management Limited (NHLML)",
+            "current_stage": "COMPLETION",
+            "primary_district_id": "DST-DEL",
+            "total_land_proposed_acres": Decimal("280.0000"),
+            "total_land_acquired_acres": Decimal("280.0000"),
+            "total_possession_acres": Decimal("280.0000"),
+            "estimated_budget_inr_cr": Decimal("980.00"),
+            "compensation_assessed_cr": Decimal("340.00"),
+            "compensation_disbursed_cr": Decimal("340.00"),
+            "total_paf_count": 420,
+            "total_pdf_count": 0,
+            "randr_completion_percent": Decimal("100.00"),
+            "risk_score": 10,
+            "created_by_user_id": creator_id,
+        },
+    ]
+
+    for p_data in projects_data:
+        stmt = select(Project).where(Project.project_code == p_data["project_code"])
+        existing = (await session.execute(stmt)).scalar_one_or_none()
+        if not existing:
+            project = Project(**p_data)
+            session.add(project)
+    await session.flush()
+    logger.info("Benchmark projects seeded successfully.")
+
+
+async def seed_activity(session: AsyncSession) -> None:
+    """Seed initial realistic statutory audit logs for activity feeds."""
+    cala_stmt = select(User).where(User.username == "district_officer")
+    cala_user = (await session.execute(cala_stmt)).scalar_one_or_none()
+    cala_id = cala_user.id if cala_user else None
+
+    agency_stmt = select(User).where(User.username == "agency_officer")
+    agency_user = (await session.execute(agency_stmt)).scalar_one_or_none()
+    agency_id = agency_user.id if agency_user else None
+
+    field_stmt = select(User).where(User.username == "field_officer")
+    field_user = (await session.execute(field_stmt)).scalar_one_or_none()
+    field_id = field_user.id if field_user else None
+
+    # Check if we already seeded sample activities
+    check_stmt = select(AuditLog).where(AuditLog.action.in_([
+        "NOTIFICATION_PUBLISHED", "CALA_HEARING_SCHEDULED", "PFMS_BATCH_APPROVED", "POSSESSION_EXECUTED"
+    ]))
+    existing = (await session.execute(check_stmt)).first()
+    if not existing:
+        sample_activities = [
+            AuditLog(
+                user_id=cala_id,
+                action="PFMS_BATCH_APPROVED",
+                entity_name="Disbursement",
+                entity_id="BATCH-PFMS-2026-088",
+                new_values={
+                    "project_code": "PRJ-NH48-PKG4",
+                    "amount_cr": 42.50,
+                    "beneficiaries": 84,
+                    "description": "PFMS Direct Benefit Transfer batch of ₹42.50 Cr authorized for Kotputli Tehsil."
+                },
+            ),
+            AuditLog(
+                user_id=cala_id,
+                action="CALA_HEARING_SCHEDULED",
+                entity_name="Notification",
+                entity_id="NOTIF-SEC15-JAI-04",
+                new_values={
+                    "project_code": "PRJ-NH48-PKG4",
+                    "khasras": ["142", "143", "144/1"],
+                    "description": "Section 15 objection hearing scheduled before CALA Jaipur for village Manpura."
+                },
+            ),
+            AuditLog(
+                user_id=agency_id,
+                action="POSSESSION_EXECUTED",
+                entity_name="Possession",
+                entity_id="POSS-WDFC-2026-019",
+                new_values={
+                    "project_code": "PRJ-WDFC-ALW",
+                    "acres": 295.0,
+                    "description": "Section 38 Panchnama executed; 295.00 acres handed over encumbrance-free to DFCCIL."
+                },
+            ),
+            AuditLog(
+                user_id=field_id,
+                action="FIELD_VERIFICATION_SUBMITTED",
+                entity_name="LandParcel",
+                entity_id="PARCEL-MAN-0012",
+                new_values={
+                    "project_code": "PRJ-NH48-PKG4",
+                    "village": "Manpura",
+                    "description": "Cadastral ground truthing and tree enumeration report completed for Khasra 88/2."
+                },
+            ),
+            AuditLog(
+                user_id=agency_id,
+                action="PROPOSAL_DPR_SUBMITTED",
+                entity_name="Project",
+                entity_id="PRJ-GUR-METRO",
+                new_values={
+                    "project_code": "PRJ-GUR-METRO",
+                    "description": "Detailed Project Report and KML alignment corridor submitted for Gurugram Metro Extension."
+                },
+            ),
+        ]
+        session.add_all(sample_activities)
+        await session.flush()
+        logger.info("Initial statutory activities seeded successfully.")
+
+
 async def seed_all(session: AsyncSession) -> None:
     """Run full idempotent database seeding."""
     await seed_roles(session)
     await seed_locations(session)
     await seed_demo_users(session)
+    await seed_projects(session)
+    await seed_activity(session)
     await session.commit()
     logger.info("All seed data successfully applied.")
 
