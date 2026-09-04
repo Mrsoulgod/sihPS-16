@@ -1,0 +1,153 @@
+import uuid
+from typing import List, Optional, Callable
+from fastapi import Depends, Header
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db
+from app.core.exceptions import DomainException
+from app.core.security import decode_access_token
+from app.models.user import User
+
+
+async def get_current_user(
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """
+    Dependency extracting and validating the JWT bearer token from Authorization header.
+    Loads the user with associated role, state, and district.
+    """
+    if not authorization:
+        raise DomainException(
+            status_code=401,
+            code="UNAUTHORIZED",
+            message="Authentication credentials were not provided in Authorization header.",
+        )
+
+    parts = authorization.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise DomainException(
+            status_code=401,
+            code="INVALID_TOKEN_FORMAT",
+            message="Invalid Authorization header format. Expected 'Bearer <token>'.",
+        )
+
+    token = parts[1]
+    payload = decode_access_token(token)
+    if not payload:
+        raise DomainException(
+            status_code=401,
+            code="INVALID_OR_EXPIRED_TOKEN",
+            message="The provided access token is invalid or has expired.",
+        )
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise DomainException(
+            status_code=401,
+            code="INVALID_TOKEN_CLAIMS",
+            message="Token subject claim is missing.",
+        )
+
+    try:
+        user_uuid = uuid.UUID(user_id_str)
+    except ValueError:
+        raise DomainException(
+            status_code=401,
+            code="INVALID_USER_ID",
+            message="Token subject is not a valid UUID.",
+        )
+
+    stmt = (
+        select(User)
+        .options(
+            selectinload(User.role),
+            selectinload(User.state),
+            selectinload(User.district),
+        )
+        .where(User.id == user_uuid)
+    )
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise DomainException(
+            status_code=401,
+            code="USER_NOT_FOUND",
+            message="The user account associated with this token no longer exists.",
+        )
+
+    if not user.is_active:
+        raise DomainException(
+            status_code=403,
+            code="ACCOUNT_DEACTIVATED",
+            message="This user account has been deactivated. Please contact an administrator.",
+        )
+
+    return user
+
+
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    Ensures user is authenticated and active.
+    """
+    return current_user
+
+
+def require_roles(*allowed_roles: str) -> Callable:
+    """
+    Declarative RBAC dependency factory.
+    Enforces that the current authenticated user has one of the specified allowed roles.
+    Matches against both role.id (e.g. 'ROLE_CENTRAL_OFFICER') and role enum name ('CENTRAL_OFFICER').
+    """
+    async def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        user_role_id = current_user.role_id
+        # Allow matching by either ROLE_ADMIN or ADMIN, etc.
+        matched = False
+        for r in allowed_roles:
+            if user_role_id == r:
+                matched = True
+                break
+            if user_role_id == f"ROLE_{r}":
+                matched = True
+                break
+            if current_user.role and current_user.role.name == r:
+                matched = True
+                break
+
+        if not matched:
+            raise DomainException(
+                status_code=403,
+                code="FORBIDDEN_ROLE",
+                message=f"Access denied: User with role '{user_role_id}' is not authorized to perform this operation.",
+                details=[
+                    {
+                        "user_role": user_role_id,
+                        "required_roles": list(allowed_roles),
+                    }
+                ],
+            )
+        return current_user
+
+    return role_checker
+
+
+def check_jurisdiction(user: User, state_id: Optional[str] = None, district_id: Optional[str] = None) -> bool:
+    """
+    Verify if a user has authority over a specific state or district.
+    - ADMIN and CENTRAL_OFFICER have national jurisdiction.
+    - STATE_OFFICER has jurisdiction over their state.
+    - DISTRICT_OFFICER and FIELD_OFFICER have jurisdiction over their district.
+    - PROJECT_AGENCY has project-level scope.
+    """
+    if user.role_id in ("ROLE_ADMIN", "ROLE_CENTRAL_OFFICER"):
+        return True
+    if user.role_id == "ROLE_STATE_OFFICER":
+        return state_id is None or user.state_id == state_id
+    if user.role_id in ("ROLE_DISTRICT_OFFICER", "ROLE_FIELD_OFFICER"):
+        return district_id is None or user.district_id == district_id
+    return True
