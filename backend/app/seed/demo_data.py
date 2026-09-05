@@ -114,7 +114,7 @@ async def seed_demo_users(session: AsyncSession) -> None:
             "district_id": None,
         },
         {
-            "username": "district_officer",
+            "username": "cala_jaipur",
             "email": "district@gov.demo",
             "full_name": "Dr. Amit Sharma, IAS",
             "designation": "District Collector & CALA",
@@ -144,7 +144,7 @@ async def seed_demo_users(session: AsyncSession) -> None:
             "district_id": "DST-JAI",
         },
         {
-            "username": "admin_officer",
+            "username": "admin",
             "email": "admin@gov.demo",
             "full_name": "Principal Systems Administrator",
             "designation": "Lead System Architect",
@@ -295,7 +295,7 @@ async def seed_projects(session: AsyncSession) -> None:
 
 async def seed_activity(session: AsyncSession) -> None:
     """Seed initial realistic statutory audit logs for activity feeds."""
-    cala_stmt = select(User).where(User.username == "district_officer")
+    cala_stmt = select(User).where(User.username.in_(["cala_jaipur", "district_officer"]))
     cala_user = (await session.execute(cala_stmt)).scalar_one_or_none()
     cala_id = cala_user.id if cala_user else None
 

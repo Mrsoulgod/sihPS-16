@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { AuthProvider } from "@/lib/hooks/useAuth";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AppShell } from "@/components/layout/AppShell";
+
+import { LanguageProvider } from "@/lib/context/LanguageContext";
 
 export const metadata: Metadata = {
   title: "NLAMS | National Land Acquisition & Management System",
@@ -19,9 +22,11 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#F8FAFC] text-slate-900 antialiased">
         <QueryProvider>
           <AuthProvider>
-            <AppShell>
-              {children}
-            </AppShell>
+            <LanguageProvider>
+              <AppShell>
+                {children}
+              </AppShell>
+            </LanguageProvider>
           </AuthProvider>
         </QueryProvider>
       </body>

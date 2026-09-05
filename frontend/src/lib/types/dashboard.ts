@@ -12,6 +12,10 @@ export interface DashboardKpiSummary {
   total_paf_count: number;
   total_pdf_count: number;
   avg_randr_completion_percent: number;
+  eligible_families?: number;
+  families_assisted?: number;
+  families_completed?: number;
+  pending_rr_cases?: number;
 }
 
 export interface AcquisitionOverview {
@@ -76,11 +80,29 @@ export interface QuickActionItem {
   icon: string;
 }
 
+export interface RAndRProgressStage {
+  stage: string;
+  count: number;
+  percentage: number;
+}
+
+export interface RAndROverview {
+  total_affected_families: number;
+  eligible_families: number;
+  families_approved: number;
+  families_assisted: number;
+  families_completed: number;
+  pending_cases: number;
+  completion_percent: number;
+  progress_stages: RAndRProgressStage[];
+}
+
 export interface DashboardSummaryData {
   scope_level: 'NATIONAL' | 'STATE' | 'DISTRICT' | 'AGENCY' | 'FIELD' | 'SYSTEM';
   jurisdiction_name: string;
   kpis: DashboardKpiSummary;
   acquisition_overview: AcquisitionOverview;
+  randr_overview?: RAndROverview;
   status_breakdown: ProjectStatusCounts;
   state_progress: StateProgressItem[];
   attention_projects: AttentionProjectItem[];

@@ -332,7 +332,7 @@ async def seed_stages_and_tasks(session: AsyncSession) -> None:
     today = date.today()
     now = datetime.now(timezone.utc)
 
-    cala_stmt = select(User).where(User.username == "district_officer")
+    cala_stmt = select(User).where(User.username.in_(["cala_jaipur", "district_officer"]))
     cala_user = (await session.execute(cala_stmt)).scalar_one_or_none()
 
     agency_stmt = select(User).where(User.username == "agency_officer")
@@ -439,7 +439,7 @@ async def seed_parcels(session: AsyncSession) -> None:
     field_stmt = select(User).where(User.username == "field_officer")
     field_user = (await session.execute(field_stmt)).scalar_one_or_none()
 
-    cala_stmt = select(User).where(User.username == "district_officer")
+    cala_stmt = select(User).where(User.username.in_(["cala_jaipur", "district_officer"]))
     cala_user = (await session.execute(cala_stmt)).scalar_one_or_none()
 
     for idx, p_seed in enumerate(PARCEL_SEEDS):

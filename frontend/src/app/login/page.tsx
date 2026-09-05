@@ -1,20 +1,79 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Shield, KeyRound, UserCheck, AlertCircle, ArrowRight, CheckCircle2 } from "lucide-react";
+import {
+  Shield,
+  KeyRound,
+  UserCheck,
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Lock,
+  Building2,
+  ArrowLeft,
+  Layers,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 const DEMO_ACCOUNTS = [
-  { label: "Central Ministry", role: "ROLE_CENTRAL_OFFICER", email: "central@gov.demo", name: "Shri Rajesh Kumar", org: "MoRTH" },
-  { label: "State Officer", role: "ROLE_STATE_OFFICER", email: "state@gov.demo", name: "Smt. Sunita Verma", org: "Govt. of Rajasthan" },
-  { label: "District CALA", role: "ROLE_DISTRICT_OFFICER", email: "district@gov.demo", name: "Dr. Amit Sharma, IAS", org: "Jaipur District" },
-  { label: "Project Agency", role: "ROLE_PROJECT_AGENCY", email: "agency@gov.demo", name: "Er. Vikram Singh", org: "NHAI" },
-  { label: "Field Surveyor", role: "ROLE_FIELD_OFFICER", email: "field@gov.demo", name: "Shri Ramesh Choudhary", org: "Tehsil Kotputli" },
-  { label: "System Admin", role: "ROLE_ADMIN", email: "admin@gov.demo", name: "Administrator", org: "NIC / NLAMS" },
+  {
+    roleId: "ROLE_DISTRICT_OFFICER",
+    label: "District Collector / CALA",
+    officer: "Dr. Amit Sharma, IAS",
+    jurisdiction: "Jaipur District CALA",
+    username: "cala_jaipur",
+    email: "district@gov.demo",
+    badge: "Approve Stages & Awards",
+  },
+  {
+    roleId: "ROLE_FIELD_OFFICER",
+    label: "Field Survey Officer",
+    officer: "Shri Ramesh Choudhary",
+    jurisdiction: "Tehsil Kotputli (Field)",
+    username: "field_officer",
+    email: "field@gov.demo",
+    badge: "Record Ground Verification",
+  },
+  {
+    roleId: "ROLE_CENTRAL_OFFICER",
+    label: "Central Ministry Officer",
+    officer: "Shri Rajesh Kumar",
+    jurisdiction: "National Command (MoRTH)",
+    username: "central_officer",
+    email: "central@gov.demo",
+    badge: "National Oversight & Sanctions",
+  },
+  {
+    roleId: "ROLE_STATE_OFFICER",
+    label: "State Revenue Officer",
+    officer: "Smt. Sunita Verma",
+    jurisdiction: "Rajasthan Revenue Board",
+    username: "state_officer",
+    email: "state@gov.demo",
+    badge: "State Corridor Scrutiny",
+  },
+  {
+    roleId: "ROLE_PROJECT_AGENCY",
+    label: "Project Agency Officer",
+    officer: "Er. Vikram Singh",
+    jurisdiction: "NHAI Project Office",
+    username: "agency_officer",
+    email: "agency@gov.demo",
+    badge: "Alignment Proposals & DPR",
+  },
+  {
+    roleId: "ROLE_ADMIN",
+    label: "System Administrator",
+    officer: "System Administrator",
+    jurisdiction: "NIC / NLAMS Central",
+    username: "admin",
+    email: "admin@gov.demo",
+    badge: "Governance & Audit Logs",
+  },
 ];
 
 export default function LoginPage() {
@@ -22,7 +81,8 @@ export default function LoginPage() {
   const { login, user, isAuthenticated, logout, isLoading } = useAuth();
 
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
-  const [password, setPassword] = useState("demo123");
+  const [password, setPassword] = useState("Password@123");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,196 +93,256 @@ export default function LoginPage() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await login({
         username_or_email: usernameOrEmail.trim(),
-        password: password,
+        password: password || "Password@123",
       });
       router.push("/dashboard");
+      if (typeof window !== "undefined") {
+        window.location.href = "/dashboard";
+      }
     } catch (err: any) {
-      setFormError(err.message || "Invalid authentication credentials.");
+      setFormError(err.message || "Invalid credentials or unauthorized access.");
+      setIsSubmitting(false);
     }
   };
 
-  const handleSelectDemoAccount = (email: string) => {
-    setUsernameOrEmail(email);
-    setPassword("demo123");
+  const handleQuickDemoLogin = async (account: (typeof DEMO_ACCOUNTS)[0]) => {
     setFormError(null);
+    setUsernameOrEmail(account.username);
+    setPassword("Password@123");
+    setIsSubmitting(true);
+
+    try {
+      await login({
+        username_or_email: account.username,
+        password: "Password@123",
+      });
+      router.push("/dashboard");
+      if (typeof window !== "undefined") {
+        window.location.href = "/dashboard";
+      }
+    } catch (err: any) {
+      setFormError(err.message || "Quick demo authentication failed.");
+      setIsSubmitting(false);
+    }
   };
 
+  // If already authenticated
   if (isAuthenticated && user) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <Card className="w-full max-w-lg border-slate-200 shadow-sm">
-          <CardHeader className="bg-emerald-50 border-b border-emerald-100 pb-4">
-            <div className="flex items-center space-x-3">
-              <CheckCircle2 className="w-6 h-6 text-emerald-700" />
-              <div>
-                <CardTitle className="text-emerald-950 text-lg">Active Session Established</CardTitle>
-                <CardDescription className="text-emerald-800">You are securely signed in to NLAMS.</CardDescription>
-              </div>
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4">
+        <div className="w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div className="flex items-center gap-3 text-emerald-800 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+            <CheckCircle2 className="h-6 w-6 text-[#138808] shrink-0" />
+            <div>
+              <p className="text-xs font-bold">Currently Authenticated</p>
+              <p className="text-sm font-bold text-slate-900">{user.full_name}</p>
+              <p className="text-[11px] text-slate-500 font-mono">{user.role_id}</p>
             </div>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            <div className="rounded-md border border-slate-200 p-4 bg-slate-50 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Official Name</span>
-                <span className="text-sm font-medium text-slate-900">{user.full_name}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Assigned Role</span>
-                <Badge variant="outline" className="bg-white text-emerald-800 border-emerald-300 font-mono text-xs">
-                  {user.role_id}
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Designation</span>
-                <span className="text-sm text-slate-700">{user.designation}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Organization</span>
-                <span className="text-sm text-slate-700">{user.organization}</span>
-              </div>
-              {user.state_name && (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Jurisdiction</span>
-                  <span className="text-sm text-slate-700">
-                    {user.state_name} {user.district_name ? `• ${user.district_name}` : ""}
-                  </span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between border-t border-slate-100 pt-4">
-            <Button variant="outline" onClick={() => logout()}>
-              Sign Out
-            </Button>
-            <Button className="bg-emerald-700 hover:bg-emerald-800 text-white" onClick={() => router.push("/dashboard")}>
-              Continue to Command Dashboard
-            </Button>
-          </CardFooter>
-        </Card>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <Link
+              href="/dashboard"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[#138808] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors"
+            >
+              <span>Go to Command Dashboard</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="px-4 py-2.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-center items-center py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-emerald-100 text-emerald-800 mb-1">
-            <Shield className="w-8 h-8" />
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between">
+      {/* Top Statutory Tricolor Bar */}
+      <div>
+        <div className="h-1 w-full flex">
+          <div className="h-full w-1/3 bg-[#FF9933]" />
+          <div className="h-full w-1/3 bg-white" />
+          <div className="h-full w-1/3 bg-[#138808]" />
+        </div>
+
+        {/* Apex Bar */}
+        <div className="bg-slate-900 text-slate-300 px-4 sm:px-8 py-1.5 text-[11px] flex items-center justify-between font-mono border-b border-slate-800">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Back to Public Transparency Portal</span>
+          </Link>
+          <span className="hidden sm:inline text-slate-400">
+            Official Statutory Authentication Gateway
+          </span>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+        <div className="text-center max-w-xl mx-auto mb-10 space-y-2">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-[#0B2545] text-white font-serif font-black text-2xl shadow-sm border border-slate-800 ring-2 ring-emerald-600/20 mb-1">
+            NL
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">National Land Acquisition Portal</h1>
-          <p className="text-sm text-slate-600 max-w-sm mx-auto">
-            Authorized Single-Window Access for Central, State, and District Land Administration Authorities
+          <h1 className="font-serif text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
+            Government Operations Sign-In
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-normal">
+            National Land Acquisition &amp; Management System • Restricted to authorized statutory officers
           </p>
         </div>
 
-        {/* Login Card */}
-        <Card className="border-slate-200 shadow-sm">
-          <form onSubmit={handleSubmit}>
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-lg text-slate-900">Sign In to Your Account</CardTitle>
-              <CardDescription className="text-xs text-slate-500">
-                Enter your official government email or username to access your jurisdiction
-              </CardDescription>
-            </CardHeader>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Official Sign-in Form */}
+          <div className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+            <div>
+              <h2 className="font-serif text-lg font-bold text-slate-950">
+                Officer Credentials
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Enter your official government credentials or NIC single sign-on username.
+              </p>
+            </div>
 
-            <CardContent className="space-y-4">
-              {formError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700 flex items-start space-x-2">
-                  <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
-                  <span>{formError}</span>
-                </div>
-              )}
+            {formError && (
+              <div className="flex items-start gap-2.5 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{formError}</span>
+              </div>
+            )}
 
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                <label className="block text-xs font-bold text-slate-700">
                   Username or Official Email
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     required
+                    placeholder="e.g. cala_jaipur or district@gov.demo"
                     value={usernameOrEmail}
                     onChange={(e) => setUsernameOrEmail(e.target.value)}
-                    placeholder="e.g. district@gov.demo or district_officer"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent bg-white text-slate-900 placeholder:text-slate-400"
+                    className="w-full text-xs px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#138808]/20 focus:border-[#138808] font-mono"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Password
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Statutory Password
                   </label>
-                  <span className="text-xs text-slate-400 font-mono">Default: Demo@123456</span>
+                  <span className="text-[10px] text-slate-400">Demo: DemoPass@123</span>
                 </div>
                 <div className="relative">
                   <input
                     type="password"
                     required
+                    placeholder="••••••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter account password"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent bg-white text-slate-900"
+                    className="w-full text-xs px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#138808]/20 focus:border-[#138808] font-mono"
                   />
                 </div>
               </div>
-            </CardContent>
 
-            <CardFooter className="flex flex-col space-y-3 pt-2">
-              <Button
+              <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-medium py-2 rounded-md transition-colors"
+                disabled={isSubmitting}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#138808] px-4 py-3 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-all disabled:opacity-50"
               >
-                {isLoading ? "Authenticating..." : "Sign In with Credentials"}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Verifying Credentials...</span>
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4" />
+                    <span>Authenticate &amp; Enter Platform</span>
+                  </>
+                )}
+              </button>
+            </form>
 
-        {/* Evaluator Demo Accounts Quick-Picker */}
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <span className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
-              SIH Evaluator Demo Accounts
-            </span>
-            <Badge variant="outline" className="text-[10px] text-slate-500 bg-slate-50 border-slate-200">
-              1-Click Autofill
-            </Badge>
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <span className="flex items-center gap-1">
+                <Lock className="h-3 w-3 text-slate-400" />
+                <span>Role-Based Statutory Access</span>
+              </span>
+              <span>Audit Logging Active</span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-left">
-            {DEMO_ACCOUNTS.map((acc) => (
-              <button
-                key={acc.email}
-                type="button"
-                onClick={() => handleSelectDemoAccount(acc.email)}
-                className={`text-left p-2.5 rounded border text-xs transition-all ${
-                  usernameOrEmail === acc.email
-                    ? "border-emerald-600 bg-emerald-50 text-emerald-950 font-medium ring-1 ring-emerald-600"
-                    : "border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-800"
-                }`}
-              >
-                <div className="font-semibold text-slate-900">{acc.label}</div>
-                <div className="text-[11px] text-slate-500 truncate">{acc.name}</div>
-                <div className="text-[10px] font-mono text-emerald-700 truncate">{acc.email}</div>
-              </button>
-            ))}
+          {/* Right Column: 1-Click Fast Demo Login for Evaluators */}
+          <div className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 text-[#138808] border border-emerald-200 text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <Sparkles className="h-3 w-3" />
+                  <span>SIH 2026 Evaluation Shortcut</span>
+                </div>
+                <h2 className="font-serif text-lg font-bold text-slate-950">
+                  1-Click Role-Based Quick Sign-In
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Select any pre-configured statutory officer profile to test role-scoped workflows immediately.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              {DEMO_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.roleId}
+                  type="button"
+                  onClick={() => handleQuickDemoLogin(acc)}
+                  disabled={isSubmitting}
+                  className="w-full text-left p-3 rounded-lg border border-slate-200 bg-slate-50/60 hover:bg-emerald-50/60 hover:border-[#138808]/40 hover:shadow-2xs transition-all group flex items-center justify-between"
+                >
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-950 group-hover:text-[#138808] transition-colors">
+                        {acc.label}
+                      </span>
+                      <span className="text-[9px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                        {acc.username}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600">
+                      {acc.officer} • <span className="text-slate-500">{acc.jurisdiction}</span>
+                    </p>
+                    <span className="text-[10px] font-medium text-emerald-700 block">
+                      {acc.badge}
+                    </span>
+                  </div>
+                  <div className="h-7 w-7 rounded-md bg-white border border-slate-200 text-slate-400 group-hover:text-[#138808] group-hover:border-[#138808]/30 flex items-center justify-center shrink-0 transition-colors">
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Statutory Security Disclaimer */}
-        <p className="text-center text-xs text-slate-500">
-          Statutory Land Governance System under RFCTLARR Act 2013.
-          <br />
-          All actions, authorizations, and audits are cryptographically logged.
+      {/* Institutional Bottom Disclaimer */}
+      <div className="bg-slate-900 text-slate-400 text-center py-4 px-4 text-[11px] border-t border-slate-800">
+        <p>
+          NLAMS • National Land Acquisition &amp; Management System • Government Digital Platform Prototype
         </p>
       </div>
     </div>

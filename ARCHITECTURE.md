@@ -275,22 +275,42 @@ graph LR
 
 ---
 
-## 9. Analytics, MIS & Predictive Risk Engine
+## 9. Analytics, Predictive Risk Intelligence & MIS Reporting Layer
 
-### 9.1 Real-Time Aggregation Engine
-Aggregates key national/state/district indicators:
-- Total proposed vs acquired land area (Acres / Hectares).
-- Total compensation deposited vs disbursed (₹ Crores).
-- Project Affected Families (PAFs) identified vs rehabilitated.
-- Average days spent per acquisition stage against statutory RFCTLARR deadlines.
+### 9.1 Real-Time PostgreSQL Aggregation Engine
+The analytics layer computes KPIs dynamically directly from PostgreSQL operational tables, avoiding hardcoded or disconnected benchmarks:
+- **National / State / District Aggregation**: Projects count, active/completed status, land proposed vs acquired, compensation assessed vs awarded vs disbursed vs outstanding (in ₹ Crores), possession taken, and affected families with R&R completion %.
+- **8-Stage Acquisition Funnel**: Clear step-by-step funnel tracking projects, land proposed, land verified, compensation assessed, awards declared, disbursed, possession taken, and R&R completed with proper dimensional units (count, acres, ₹ Cr, PAFs).
+- **Time-Series & Milestones**: Historical timeline derived from real creation/approval timestamps for projects, awards, disbursements, and possession.
+- **Bottleneck & Data Quality Engine**: Automatic detection of overdue workflow tasks, high outstanding compensation, delayed possession, and financial consistency reconciliation checks (Disbursed ≤ Awarded, Acquired ≤ Proposed).
 
-### 9.2 Predictive Risk Scoring Model (0 to 100 Risk Index)
-Calculated per project and per parcel based on 5 weighted risk factors:
-1. **Litigation & Objections Factor (Weight 30%)**: Unresolved Section 15 objections, court stay orders, or inheritance disputes.
-2. **Title Fragmentation & Discrepancies (Weight 25%)**: Multiple joint co-owners without clear partition deeds, or difference between revenue record and physical ground area > 5%.
-3. **Timeline Drift (Weight 20%)**: Days elapsed since Section 11 notification approaching the 12-month statutory lapsing limit (Section 25).
-4. **Valuation Variance (Weight 15%)**: Mismatch between prevailing market transaction records and state circle rates.
-5. **R&R Vulnerability (Weight 10%)**: High proportion of displaced families (PDFs) belonging to SC/ST or vulnerable categories requiring complex rehabilitation colonies.
+### 9.2 Predictive Risk Intelligence Engine (0 to 100 Risk Index)
+A transparent, configurable rule-based decision-support engine scoring projects from 0 to 100 across 5 statutory factors:
+1. **Workflow Delay Risk (Weight 20%)**: Proportion of overdue workflow approval tasks and overall stage SLA drift.
+2. **Land / Parcel Verification Risk (Weight 20%)**: Ratio of unverified or disputed parcels relative to total project parcels.
+3. **Compensation & Disbursement Risk (Weight 25%)**: Percentage of assessed compensation remaining undisbursed or un-awarded.
+4. **Dispute & Litigation Risk (Weight 15%)**: Unresolved Section 15 objections, disputed titles, and pending ownership claims.
+5. **R&R & Possession Lag Risk (Weight 20%)**: Unsettled Project Affected Families (PAFs) and parcels with delayed physical handover after award declaration.
+
+**Score Interpretation**:
+- `0–24`: **LOW RISK** (Green) — Progressing normally within statutory RFCTLARR schedules.
+- `25–49`: **MODERATE RISK** (Yellow) — Minor milestones or verification lags; monitoring advised.
+- `50–74`: **HIGH RISK** (Orange) — Significant overdue tasks or disbursement bottlenecks; proactive CALA intervention required.
+- `75–100`: **CRITICAL RISK** (Red) — Severe statutory drift, Section 25 lapsing vulnerability, or unresolved major dispute; immediate escalation mandated.
+
+### 9.3 Statutory MIS Reporting & Multi-Format Export Engine
+- **7 Pre-Built Standard Report Templates**:
+  1. National Acquisition Progress Summary
+  2. State-Wise Acquisition & Land Summary
+  3. Comprehensive Project Progress Report
+  4. Compensation & Disbursement Financial Report
+  5. Physical Land Possession Status Report
+  6. Affected Families & R&R Entitlement Report
+  7. Risk Intelligence & Bottleneck Audit Report
+- **Live Preview**: Paginated interactive preview with summary KPIs and column headers.
+- **Backend PDF Generation**: Clean government-formatted PDF generation using `reportlab` with official NLAMS branding, generation timestamps, tabular layouts, and dynamic page numbering.
+- **Backend Excel Generation**: Structured multi-sheet `.xlsx` workbooks generated via `openpyxl` with styled metadata headers and typed numerical columns.
+- **Role-Based Security & Jurisdiction**: RBAC strictly enforced in backend queries so district or state officers only see data within their authorized jurisdiction.
 
 ---
 

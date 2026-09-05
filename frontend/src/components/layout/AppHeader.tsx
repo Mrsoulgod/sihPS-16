@@ -15,6 +15,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { RoleCode } from "@/lib/types/auth";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 interface AppHeaderProps {
   onToggleSidebar: () => void;
@@ -112,8 +113,10 @@ export function AppHeader({ onToggleSidebar, isSidebarOpen }: AppHeaderProps) {
           </div>
         </div>
 
-        {/* Right: Notifications, Role Switcher, User Chip */}
+        {/* Right: Notifications, Language, Role Switcher, User Chip */}
         <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher />
+
           {/* Statutory Alerts Notification Bell */}
           <div className="relative">
             <button

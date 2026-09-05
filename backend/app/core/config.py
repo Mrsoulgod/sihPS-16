@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    DEMO_USER_PASSWORD: str = "Demo@123456"
+    DEMO_USER_PASSWORD: str = "DemoPass@123"
 
     # CORS configuration
     CORS_ORIGINS: Union[List[str], str] = [

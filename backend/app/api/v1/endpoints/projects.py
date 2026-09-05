@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.permissions import get_current_user
+from app.core.permissions import get_optional_user
 from app.models.user import User
 from app.schemas.project import ProjectListItem, ProjectDetailResponse
 from app.services.project_service import ProjectService
@@ -18,7 +18,7 @@ async def list_projects(
     stage: Optional[str] = Query(None, description="Filter by acquisition stage"),
     search: Optional[str] = Query(None, description="Search project code or title"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """Retrieve all infrastructure projects scoped by authenticated user's jurisdiction."""
     return await ProjectService.list_projects(
@@ -34,7 +34,7 @@ async def list_projects(
 async def get_project_detail(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
     """Retrieve 360° detail for a specific project."""
     return await ProjectService.get_project_detail(

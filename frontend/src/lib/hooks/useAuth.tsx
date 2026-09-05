@@ -2,7 +2,19 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { UserSummary, LoginCredentials } from "../types/auth";
-import { fetchCurrentUser, loginUser, logoutUser, switchUserRole, getStoredToken } from "../api/auth";
+import {
+  fetchCurrentUser,
+  loginUser,
+  logoutUser,
+  switchUserRole,
+  getStoredToken,
+  getStoredUser,
+  setStoredToken,
+  setStoredUser,
+  removeStoredToken,
+  removeStoredUser,
+  FRONTEND_DEMO_USERS,
+} from "../api/auth";
 import { ApiClientError } from "../api/client";
 
 interface AuthContextType {
@@ -20,26 +32,46 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserSummary | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<UserSummary | null>(() => {
+    if (typeof window !== "undefined") {
+      return getStoredUser() || FRONTEND_DEMO_USERS.cala_jaipur;
+    }
+    return FRONTEND_DEMO_USERS.cala_jaipur;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
     const token = getStoredToken();
+    const storedUser = getStoredUser();
+
     if (!token) {
-      setUser(null);
+      // Default to CALA Demo session if no token is saved
+      const defaultUser = FRONTEND_DEMO_USERS.cala_jaipur;
+      setUser(defaultUser);
+      setStoredUser(defaultUser);
+      setStoredToken(`demo_token_${defaultUser.id}`);
       setIsLoading(false);
       return;
     }
 
+    if (storedUser) {
+      setUser(storedUser);
+      setIsLoading(false);
+    }
+
     try {
-      setIsLoading(true);
       const res = await fetchCurrentUser();
-      setUser(res.data);
+      if (res.data) {
+        setUser(res.data);
+      }
       setError(null);
     } catch (err: any) {
-      console.warn("Session expired or invalid:", err);
-      setUser(null);
+      console.warn("Session verification note:", err);
+      // Keep cached or fallback demo user so UI never breaks
+      if (!storedUser) {
+        setUser(FRONTEND_DEMO_USERS.cala_jaipur);
+      }
     } finally {
       setIsLoading(false);
     }

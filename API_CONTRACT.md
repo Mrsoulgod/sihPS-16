@@ -127,36 +127,43 @@
 
 ---
 
-### 2.7 Compensation & Solatium Engine (`/api/v1/compensation`)
+### 2.7 Configurable Compensation Assessment (`/api/v1/compensation`)
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
-| `GET` | `/compensation/parcels/{parcel_id}` | Get RFCTLARR calculation breakdown (Base, Multiplier, Solatium, 12% Interest) | All Roles |
-| `POST` | `/compensation/calculate` | Compute trial compensation given land type, circle rate & distance | All Roles |
-| `POST` | `/compensation/parcels/{parcel_id}/finalize` | CALA signs and locks statutory compensation calculation | `DISTRICT_OFFICER` |
-| `POST` | `/compensation/parcels/{parcel_id}/assets` | Add asset valuation line items (structures, trees, borewells) | `FIELD_OFFICER`, `DISTRICT_OFFICER` |
+| `GET` | `/compensation` | List compensation assessments with filtering (project, state, district, status, search, pagination) | All Roles (Scoped) |
+| `POST` | `/compensation` | Create formal compensation assessment for a verified parcel | `DISTRICT_OFFICER`, `ADMIN` |
+| `POST` | `/compensation/calculate` | Compute trial compensation under configurable statutory framework | All Roles |
+| `GET` | `/compensation/{id}` | Get 360° calculation breakdown (Base Land, Factors, Assets, Statutory Additional Amount, Solatium) | All Roles (Scoped) |
+| `POST` | `/compensation/{id}/approve` | CALA review and formal sanction decision (`APPROVED` / `REJECTED`) | `DISTRICT_OFFICER`, `ADMIN` |
+| `POST` | `/compensation/{id}/assets` | Add asset valuation line items (structures, trees, borewells) | `FIELD_OFFICER`, `DISTRICT_OFFICER`, `ADMIN` |
+
+> **Calculation Formula**:  
+> Market / Base Land Value + Applicable Land Value Factors + Asset / Structure Valuation + Applicable Statutory Additional Amounts + Applicable Solatium = Configurable Compensation Assessment
 
 ---
 
-### 2.8 Section 23/30 Awards (`/api/v1/awards`)
+### 2.8 Section 23/30 Statutory Awards (`/api/v1/awards`)
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
-| `GET` | `/awards` | List declared land acquisition awards | All Roles |
-| `POST` | `/awards` | Generate Section 23/30 statutory Award document batch | `DISTRICT_OFFICER` |
-| `GET` | `/awards/{id}` | Get award details, parcel list, and payment allocation | All Roles |
-| `POST` | `/awards/{id}/sign` | Apply CALA digital e-Sign to declare award publicly | `DISTRICT_OFFICER` |
+| `GET` | `/awards` | List declared Section 23/30 awards with filtering and pagination | All Roles (Scoped) |
+| `POST` | `/awards` | Generate statutory award linking approved compensation assessments | `DISTRICT_OFFICER`, `ADMIN` |
+| `GET` | `/awards/{id}` | Get award details, covered parcels list, disbursements summary, and approval stamp | All Roles (Scoped) |
+| `PATCH` | `/awards/{id}/status` | Transition award status (`UNDER_REVIEW`, `APPROVED`, `ISSUED`, `CLOSED`) | `DISTRICT_OFFICER`, `ADMIN` |
+| `POST` | `/awards/{id}/sign` | Apply **Demo e-Sign / Approval Stamp** (cryptographic audit hash) | `DISTRICT_OFFICER`, `ADMIN` |
 
 ---
 
-### 2.9 Disbursements & DBT / PFMS (`/api/v1/disbursements`)
+### 2.9 PFMS-Compatible / Simulated Payment Workflow (`/api/v1/disbursements`)
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
-| `GET` | `/disbursements` | List disbursement records with PFMS status & UTR numbers | All Roles |
-| `POST` | `/disbursements/initiate-batch` | Push approved award compensation batch to PFMS payment gateway | `DISTRICT_OFFICER` |
-| `GET` | `/disbursements/batch/{batch_ref}` | Check real-time PFMS batch processing status | All Roles |
-| `POST` | `/disbursements/simulate-callback` | **Demo Feature**: Trigger simulated PFMS bank credit callback | `ADMIN`, `DISTRICT_OFFICER` |
+| `GET` | `/disbursements` | List disbursement records with masked bank accounts/IFSC, PFMS status & UTRs | All Roles (Scoped) |
+| `POST` | `/disbursements/initiate-batch` | Push approved award compensation batch to simulated PFMS DBT workflow | `DISTRICT_OFFICER`, `ADMIN` |
+| `GET` | `/disbursements/{id}` | Full transaction detail with masked beneficiary data and gateway audit | All Roles (Scoped) |
+| `POST` | `/disbursements/{id}/process` | Process transaction or simulate PFMS callback with mock bank UTR | `DISTRICT_OFFICER`, `ADMIN` |
+| `GET` | `/disbursements/summary/{project_or_award_id}` | Financial reconciliation ledger ($Disbursed \le Awarded$; Outstanding = Awarded - Disbursed) | All Roles (Scoped) |
 
 ---
 
@@ -164,25 +171,39 @@
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
-| `GET` | `/possession` | List parcels with possession status and handover dates | All Roles |
-| `POST` | `/possession/handover` | Issue Section 38 Handover Certificate and mark land encumbrance-free | `DISTRICT_OFFICER`, `PROJECT_AGENCY` |
-| `GET` | `/possession/{parcel_id}/certificate` | Generate & download PDF Possession Certificate | All Roles |
+| `GET` | `/possession` | List land possession records, status, and encumbrance flags | All Roles (Scoped) |
+| `POST` | `/possession` | Record Section 38 regular handover or Section 40 urgency exceptional pathway | `DISTRICT_OFFICER`, `ADMIN` |
+| `GET` | `/possession/{id}` | Get possession detail, prerequisite compliance checks (4 checks), and certificate view | All Roles (Scoped) |
+| `PATCH` | `/possession/{id}/status` | Update possession takeover status (`TAKEN`, `SCHEDULED`, `DISPUTED`, `CANCELLED`) | `DISTRICT_OFFICER`, `ADMIN` |
 
 ---
 
-### 2.11 Rehabilitation & Resettlement (R&R) (`/api/v1/randr`)
+### 2.11 Rehabilitation & Resettlement Schemes (`/api/v1/r-and-r`) — Phase 6
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
-| `GET` | `/randr/projects/{id}` | Get R&R scheme summary (Resettlement site, PAF/PDF counts, spend) | All Roles |
-| `GET` | `/randr/families` | List Project Affected & Displaced Families with entitlements | All Roles |
-| `POST` | `/randr/families` | Enumerate affected family and compute 2nd Schedule entitlement | `DISTRICT_OFFICER`, `FIELD_OFFICER` |
-| `POST` | `/randr/allot-plot` | Allot homestead plot in resettlement colony | `DISTRICT_OFFICER` |
-| `POST` | `/randr/disburse-grant` | Disburse R&R subsistence & transportation grant | `DISTRICT_OFFICER` |
+| `GET` | `/r-and-r` | List R&R schemes with progress KPIs, family counts, and budget utilization | All Roles (Scoped) |
+| `GET` | `/r-and-r/{id}` | 360° scheme detail with progress funnel, covered families, allotments, and authority metadata | All Roles (Scoped) |
+| `POST` | `/r-and-r` | Create new R&R scheme for a project | `DISTRICT_OFFICER`, `STATE_OFFICER`, `ADMIN` |
+| `PATCH` | `/r-and-r/{id}` | Update scheme metadata (budget, status, target dates) | `DISTRICT_OFFICER`, `ADMIN` |
+| `PATCH` | `/r-and-r/{id}/status` | Advance scheme lifecycle status (`DRAFT` → `APPROVED` → `IN_PROGRESS` → `COMPLETED`) | `DISTRICT_OFFICER`, `ADMIN` |
 
 ---
 
-### 2.12 GIS & Spatial Services (`/api/v1/gis`)
+### 2.12 Affected Families & Configurable Eligibility (`/api/v1/affected-families`) — Phase 6
+
+| Method | Endpoint | Description | Role Scope |
+|---|---|---|---|
+| `GET` | `/affected-families` | List PAF/PDF records with eligibility, khasra linkage, and R&R scheme filters | All Roles (Scoped) |
+| `GET` | `/affected-families/{id}` | 360° family detail with complete 7-node acquisition trace (Project → Parcel → Owner → Compensation → Award → Disbursement → Possession → R&R) and allotments ledger | All Roles (Scoped) |
+| `POST` | `/affected-families` | Enumerate and register an affected family under an R&R scheme | `DISTRICT_OFFICER`, `FIELD_OFFICER`, `ADMIN` |
+| `PATCH` | `/affected-families/{id}/eligibility` | Record Configurable R&R Eligibility Assessment decision with statutory basis and audit trail | `DISTRICT_OFFICER`, `ADMIN` |
+| `PATCH` | `/affected-families/{id}/status` | Update rehabilitation lifecycle status (`ENUMERATED` → `ELIGIBILITY_VERIFIED` → `PLOT_ALLOTTED` → `SETTLED`) | `DISTRICT_OFFICER`, `FIELD_OFFICER`, `ADMIN` |
+| `POST` | `/affected-families/{id}/allotments` | Record entitlement / plot allotment for an affected family with scheme budget tracking | `DISTRICT_OFFICER`, `ADMIN` |
+
+---
+
+### 2.13 GIS & Spatial Services (`/api/v1/gis`)
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
@@ -192,7 +213,7 @@
 
 ---
 
-### 2.13 Document Management & SHA-256 Integrity (`/api/v1/documents`)
+### 2.14 Document Management & SHA-256 Integrity (`/api/v1/documents`)
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
@@ -202,18 +223,35 @@
 
 ---
 
-### 2.14 Analytics, MIS Reports & Risk Radar (`/api/v1/analytics` & `/reports`)
+### 2.15 Analytics, Predictive Risk Intelligence & MIS Reports (`/api/v1/analytics`, `/api/v1/risk`, `/api/v1/reports`)
 
+#### Analytics Endpoints (`/api/v1/analytics`)
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
-| `GET` | `/analytics/national-kpis` | National dashboard aggregate metrics (Acres, Spend, PAFs, Delays) | `CENTRAL_OFFICER`, `STATE_OFFICER`, `ADMIN` |
-| `GET` | `/analytics/projects/{id}/risk-breakdown` | Predictive risk score breakdown across 5 RFCTLARR risk factors | All Roles |
-| `GET` | `/analytics/bottlenecks` | Identification of stage bottlenecks exceeding statutory SLAs | `CENTRAL_OFFICER`, `STATE_OFFICER` |
-| `GET` | `/reports/mis/project-status` | Generate standardized MIS executive summary report (PDF/Excel data) | All Roles |
+| `GET` | `/analytics/overview` | National command overview with KPIs, 8-stage funnel, and progress breakdowns | All Roles (Scoper Enforced) |
+| `GET` | `/analytics/states` | State-wise land acquisition, financial, possession, and R&R metrics | Central, State Officers, Admin |
+| `GET` | `/analytics/districts` | District-wise metrics drill-down for a specified state | Central, State, District Officers, Admin |
+| `GET` | `/analytics/time-series` | Real-timestamp milestone time-series (projects, awards, disbursements, possession) | All Roles |
+| `GET` | `/analytics/bottlenecks` | Active bottlenecks, overdue tasks, disbursement lags with risk classifications | All Roles |
+| `GET` | `/analytics/data-quality` | Automated financial and land reconciliation integrity audits | Admin, Central Officers |
+
+#### Risk Intelligence Endpoints (`/api/v1/risk`)
+| Method | Endpoint | Description | Role Scope |
+|---|---|---|---|
+| `GET` | `/risk/overview` | National risk overview, 0-100 score distribution, 5-factor benchmarks, and high-risk projects leaderboard | All Roles |
+| `GET` | `/risk/projects/{id}` | Detailed 5-factor risk score breakdown, contributing drivers, and decision-support guidance for a project | All Roles |
+
+#### Statutory MIS Reporting Endpoints (`/api/v1/reports`)
+| Method | Endpoint | Description | Role Scope |
+|---|---|---|---|
+| `GET` | `/reports/types` | List available statutory MIS report template types and descriptions | All Roles |
+| `GET` | `/reports/preview` | Generate live paginated preview of chosen MIS report with summary KPIs | All Roles (Scoped) |
+| `GET` | `/reports/export/pdf` | Download official government-formatted PDF report via ReportLab | All Roles (Scoped) |
+| `GET` | `/reports/export/excel` | Download structured multi-sheet `.xlsx` workbook via OpenPyXL | All Roles (Scoped) |
 
 ---
 
-### 2.15 Alerts & Audit Trails (`/api/v1/alerts` & `/audit`)
+### 2.16 Alerts & Audit Trails (`/api/v1/alerts` & `/audit`)
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
@@ -223,10 +261,41 @@
 
 ---
 
-### 2.16 Mock Government Integrations (`/api/v1/mock-integrations`)
+### 2.17 Government Integration Gateway (`/api/v1/integrations`)
 
 | Method | Endpoint | Description | Role Scope |
 |---|---|---|---|
-| `GET` | `/mock-integrations/bhulekh/khasra/{khasra_no}` | Query simulated State Land Records database for title & mutation | All Roles |
-| `POST` | `/mock-integrations/pfms/simulate-dbt` | Trigger simulated PFMS bulk bank transfer | `DISTRICT_OFFICER`, `ADMIN` |
-| `GET` | `/mock-integrations/digilocker/verify-aadhaar/{aadhaar}`| Simulated instant Aadhaar demographic verification | `FIELD_OFFICER`, `DISTRICT_OFFICER` |
+| `GET` | `/integrations/` | List all 4 sandbox integration gateways (Bhulekh, Bhuvan, PFMS, SMS) | All Roles |
+| `POST` | `/integrations/{code}/test-sync` | Execute live contract simulation test with latency telemetry and audit hash | `ADMIN`, `CENTRAL_OFFICER`, `DISTRICT_OFFICER` |
+
+---
+
+### 2.18 Master Data & Taxonomy (`/api/v1/master-data`)
+
+| Method | Endpoint | Description | Role Scope |
+|---|---|---|---|
+| `GET` | `/master-data/geography` | Retrieve administrative hierarchy (State → District → Tehsil → Village) | All Roles |
+| `GET` | `/master-data/taxonomy` | Retrieve lifecycle stages, land parcel types, and R&R entitlement taxonomies | All Roles |
+| `GET` | `/master-data/statutory-parameters` | Retrieve RFCTLARR calculation constants (Solatium 100%, 12% interest, SLAs, Risk weights) | All Roles |
+
+---
+
+### 2.19 Document Vault & Version Control (`/api/v1/documents`)
+
+| Method | Endpoint | Description | Role Scope |
+|---|---|---|---|
+| `GET` | `/documents/` | List repository documents with version and hash metadata | All Roles |
+| `GET` | `/documents/{id}` | Get document 360° detail with complete version history chain | All Roles |
+| `GET` | `/documents/{id}/versions` | Get isolated version history chain for a document | All Roles |
+| `POST` | `/documents/upload` | Upload a new statutory document or subsequent version revision | `ADMIN`, `DISTRICT_OFFICER`, `PROJECT_AGENCY` |
+| `POST` | `/documents/{id}/verify-hash` | Cryptographically verify SHA-256 integrity against gazette records | All Roles |
+
+---
+
+### 2.20 Field Officer Mobile Survey Workflow (`/api/v1/field`)
+
+| Method | Endpoint | Description | Role Scope |
+|---|---|---|---|
+| `GET` | `/field/assigned-parcels` | List assigned land parcels for field ground survey | `FIELD_OFFICER`, `DISTRICT_OFFICER`, `ADMIN` |
+| `POST` | `/field/parcels/{id}/verify` | Submit 4-point verification checklist, GPS coordinates, tree count (Draft/CALA) | `FIELD_OFFICER`, `DISTRICT_OFFICER`, `ADMIN` |
+

@@ -1,8 +1,8 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional, TYPE_CHECKING
-from sqlalchemy import String, Numeric, Integer, Date, ForeignKey
+from sqlalchemy import String, Numeric, Integer, Date, DateTime, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from app.models.project import Project
     from app.models.user import User
     from app.models.disbursement import Disbursement
+    from app.models.compensation import CompensationAssessment
+    from app.models.possession import Possession
 
 
 class Award(Base):
@@ -26,12 +28,18 @@ class Award(Base):
     total_award_amount_inr: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=Decimal("0.0"), nullable=False)
     cala_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     digital_sign_hash: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    status: Mapped[str] = mapped_column(String(20), default="DECLARED", nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(30), default="ISSUED", nullable=False, index=True)
+    remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    approved_by_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approval_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     project: Mapped["Project"] = relationship("Project", back_populates="awards")
     cala_user: Mapped["User"] = relationship("User", foreign_keys=[cala_user_id])
+    approved_by: Mapped[Optional["User"]] = relationship("User", foreign_keys=[approved_by_user_id])
     disbursements: Mapped[List["Disbursement"]] = relationship("Disbursement", back_populates="award", cascade="all, delete-orphan")
+    compensation_assessments: Mapped[List["CompensationAssessment"]] = relationship("CompensationAssessment", back_populates="award")
+    possessions: Mapped[List["Possession"]] = relationship("Possession", back_populates="award")
 
     def __repr__(self) -> str:
         return f"<Award(number='{self.award_number}', total_inr={self.total_award_amount_inr}, status='{self.status}')>"

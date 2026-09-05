@@ -5,11 +5,22 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { AppHeader } from "./AppHeader";
 import { AppSidebar } from "./AppSidebar";
+import { PublicHeader } from "./PublicHeader";
+import { PublicFooter } from "./PublicFooter";
 import { Loader2 } from "lucide-react";
 
 interface AppShellProps {
   children: React.ReactNode;
 }
+
+const PUBLIC_ROUTES = [
+  "/",
+  "/about",
+  "/how-it-works",
+  "/transparency",
+  "/overview",
+  "/login",
+];
 
 export function AppShell({ children }: AppShellProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -24,46 +35,39 @@ export function AppShell({ children }: AppShellProps) {
     setIsMobileOpen(false);
   }, [pathname]);
 
-  // Route protection: redirect unauthenticated users to /login
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated && pathname !== "/login") {
-      router.replace("/login");
-    }
-  }, [isLoading, isAuthenticated, pathname, router]);
+  const isPublicRoute =
+    PUBLIC_ROUTES.includes(pathname) ||
+    pathname.startsWith("/about") ||
+    pathname.startsWith("/how-it-works") ||
+    pathname.startsWith("/transparency") ||
+    pathname.startsWith("/overview");
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-lg bg-[#0B2545] text-white flex items-center justify-center font-serif font-black text-xl shadow-lg ring-2 ring-emerald-500 animate-pulse">
-            NL
-          </div>
-          <div className="flex items-center gap-2 text-slate-700 text-sm font-semibold">
-            <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-            <span>Connecting to National Land Acquisition Command Portal...</span>
-          </div>
-          <p className="text-xs text-slate-500">Authenticating credentials against database</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If on login page, don't show the dashboard shell
+  // 1. Dedicated standalone layout for Login page
   if (pathname === "/login") {
     return <>{children}</>;
   }
 
-  // Authenticated layout
+  // 2. Public Transparency Website layout (PublicHeader + PublicFooter, no sidebar)
+  if (isPublicRoute) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col antialiased selection:bg-emerald-100 selection:text-emerald-900">
+        <PublicHeader />
+        <main className="flex-1 w-full">{children}</main>
+        <PublicFooter />
+      </div>
+    );
+  }
+
+  // 3. Authenticated Government Operations Platform (AppHeader + AppSidebar)
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col antialiased">
-      {/* Permanent Header */}
+      {/* Permanent Command Header */}
       <AppHeader
         onToggleSidebar={() => setIsMobileOpen(!isMobileOpen)}
         isSidebarOpen={isMobileOpen}
       />
 
-      {/* Main Body with Sidebar and Content */}
+      {/* Main Body with Sidebar and Operations Content */}
       <div className="flex flex-1 w-full max-w-[100vw] overflow-x-hidden">
         <AppSidebar
           isMobileOpen={isMobileOpen}

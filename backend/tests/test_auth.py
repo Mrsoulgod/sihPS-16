@@ -41,7 +41,7 @@ async def test_login_success_with_username():
         response = await client.post(
             "/api/v1/auth/login",
             json={
-                "username_or_email": "district_officer",
+                "username_or_email": "cala_jaipur",
                 "password": settings.DEMO_USER_PASSWORD,
             },
         )

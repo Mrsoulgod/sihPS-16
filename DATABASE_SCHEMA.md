@@ -210,22 +210,30 @@ erDiagram
 - `cala_order_notes`: TEXT
 - `order_document_id`: UUID (FK -> documents.id)
 
-#### `compensation_assessments`
+#### `compensation_assessments` (Configurable Compensation Assessment Framework)
 | Field | Type | Modifiers | Description |
 |---|---|---|---|
 | `id` | UUID | PK, DEFAULT gen_random_uuid() | Assessment unique ID |
+| `assessment_reference` | VARCHAR(100) | UNIQUE, NOT NULL | Public assessment code (e.g. `COMP/2026/03/001`) |
 | `parcel_id` | UUID | FK -> land_parcels.id, UNIQUE | Associated land parcel |
-| `base_land_value_inr` | NUMERIC(14, 2) | NOT NULL | Base rate × Acquired Area |
-| `multiplier_factor` | NUMERIC(4, 2) | NOT NULL | Rural multiplier (1.00 - 2.00) |
-| `market_value_land_inr` | NUMERIC(14, 2) | NOT NULL | Base × Multiplier |
-| `assets_value_inr` | NUMERIC(14, 2) | DEFAULT 0.0 | Sum of trees, structures, borewells |
-| `solatium_inr` | NUMERIC(14, 2) | NOT NULL | **100% Solatium** on (Market Value + Assets) |
-| `additional_market_value_inr` | NUMERIC(14, 2) | NOT NULL | **12% p.a. interest** from Sec 11 to Award |
-| `total_compensation_inr` | NUMERIC(14, 2) | NOT NULL | Sum total statutory compensation |
-| `is_approved_by_cala` | BOOLEAN | DEFAULT FALSE | CALA approval status |
-| `approval_date` | TIMESTAMP | NULL | Approval timestamp |
+| `base_land_value_inr` | NUMERIC(14, 2) | NOT NULL | **Market / Base Land Value** (Base rate × Acquired Area) |
+| `multiplier_factor` | NUMERIC(4, 2) | NOT NULL | **Applicable Land Value Factor** (Configurable factor 1.00× - 2.00×) |
+| `market_value_land_inr` | NUMERIC(14, 2) | NOT NULL | Base Land Value × Land Value Factor |
+| `assets_value_inr` | NUMERIC(14, 2) | DEFAULT 0.0 | **Asset / Structure Valuation** (Sum of net asset valuations) |
+| `solatium_inr` | NUMERIC(14, 2) | NOT NULL | **Applicable Solatium** (100% statutory solatium on Land Market Value + Assets) |
+| `additional_market_value_inr` | NUMERIC(14, 2) | NOT NULL | **Applicable Statutory Additional Amount** (12% p.a. condition-based amount from Sec 11 to Award) |
+| `total_compensation_inr` | NUMERIC(14, 2) | NOT NULL | **Configurable Compensation Assessment Total** |
+| `status` | VARCHAR(30) | DEFAULT 'APPROVED' | `DRAFT`, `UNDER_REVIEW`, `APPROVED`, `REJECTED` |
+| `is_approved_by_cala` | BOOLEAN | DEFAULT FALSE | CALA endorsement flag |
+| `approval_date` | TIMESTAMP | NULL | CALA approval timestamp |
+| `assessing_officer_id` | UUID | FK -> users.id, NULL | Officer conducting assessment |
+| `award_id` | UUID | FK -> awards.id, NULL | Award in which this parcel assessment is included |
+| `remarks` | TEXT | NULL | Administrative derivation notes |
 
-#### `asset_valuations` (Breakdown for Trees / Structures / Wells)
+> **Calculation Formula**:  
+> Market / Base Land Value + Applicable Land Value Factors + Asset / Structure Valuation + Applicable Statutory Additional Amounts + Applicable Solatium = Configurable Compensation Assessment
+
+#### `asset_valuations` (Itemized Breakdown for Structures / Trees / Wells)
 - `id`: UUID (PK)
 - `assessment_id`: UUID (FK -> compensation_assessments.id)
 - `asset_category`: VARCHAR(30) (`RESIDENTIAL_STRUCTURE`, `COMMERCIAL_STRUCTURE`, `FRUIT_BEARING_TREE`, `TIMBER_TREE`, `TUBEWELL_PUMP`)
@@ -237,7 +245,7 @@ erDiagram
 - `depreciation_inr`: NUMERIC(12, 2)
 - `net_asset_value_inr`: NUMERIC(12, 2)
 
-#### `awards` (Section 23 & 30 Awards)
+#### `awards` (Section 23 & 30 Statutory Awards)
 - `id`: UUID (PK)
 - `project_id`: UUID (FK -> projects.id)
 - `award_number`: VARCHAR(100) (UNIQUE, NOT NULL, e.g. `AWARD/CALA/JAI/2026/042`)
@@ -246,51 +254,107 @@ erDiagram
 - `total_area_acres`: NUMERIC(10, 4)
 - `total_award_amount_inr`: NUMERIC(14, 2)
 - `cala_user_id`: UUID (FK -> users.id)
-- `digital_sign_hash`: VARCHAR(128) (Mock e-Sign signature)
-- `status`: VARCHAR(20) (`DECLARED`, `NOTIFIED_TO_OWNERS`, `UNDER_DISBURSEMENT`, `CLOSED`)
+- `digital_sign_hash`: VARCHAR(128) (**Demo e-Sign / Approval Stamp** cryptographic hash)
+- `status`: VARCHAR(20) (`DRAFT`, `UNDER_REVIEW`, `APPROVED`, `ISSUED`, `CHALLENGED`, `CLOSED`)
+- `approved_by_user_id`: UUID (FK -> users.id, NULL)
+- `approval_date`: TIMESTAMP (NULL)
+- `remarks`: TEXT (NULL)
 
-#### `disbursements` (PFMS Payment Records)
+#### `disbursements` (PFMS-Compatible / Simulated Payment Workflow)
 - `id`: UUID (PK)
+- `disbursement_reference`: VARCHAR(100) (UNIQUE, NOT NULL, e.g. `DBT/2026/03/001`)
 - `award_id`: UUID (FK -> awards.id)
 - `parcel_id`: UUID (FK -> land_parcels.id)
 - `owner_id`: UUID (FK -> land_owners.id)
 - `amount_inr`: NUMERIC(14, 2) (NOT NULL)
+- `payment_method`: VARCHAR(50) (DEFAULT `PFMS_DBT`)
 - `pfms_batch_reference`: VARCHAR(100) (e.g. `PFMS-2026-BAT-8472`)
-- `payment_status`: VARCHAR(20) (`INITIATED`, `PROCESSING_PFMS`, `SUCCESS_CREDITED`, `FAILED_BOUNCED`, `HELD_IN_ESCROW`)
+- `payment_status`: VARCHAR(20) (`PENDING`, `PROCESSING`, `DISBURSED`, `FAILED`, `ON_HOLD`, `CANCELLED`)
 - `bank_utr_number`: VARCHAR(50) (e.g. `SBIN260481948291`)
 - `disbursed_at`: TIMESTAMP
+- `processed_by_user_id`: UUID (FK -> users.id, NULL)
 - `failure_reason`: TEXT
+- `remarks`: TEXT
 
-#### `possessions` (Section 38 Handover)
+#### `possessions` (Section 38 Regular Handover & Section 40 Urgency Exception)
 - `id`: UUID (PK)
+- `possession_reference`: VARCHAR(100) (UNIQUE, NOT NULL, e.g. `POSS/2026/03/001`)
 - `project_id`: UUID (FK -> projects.id)
 - `parcel_id`: UUID (FK -> land_parcels.id, UNIQUE)
+- `award_id`: UUID (FK -> awards.id, NULL)
 - `possession_date`: DATE (NOT NULL)
-- `possession_type`: VARCHAR(30) (`REGULAR_POST_DISBURSEMENT`, `SECTION_40_URGENCY_CLAUSE`)
+- `possession_type`: VARCHAR(30) (`SECTION_38_REGULAR`, `SECTION_40_URGENCY_CLAUSE`)
+- `status`: VARCHAR(30) (DEFAULT `TAKEN`, `PENDING`, `SCHEDULED`, `DISPUTED`, `CANCELLED`)
 - `is_encumbrance_free`: BOOLEAN (DEFAULT TRUE)
 - `possession_certificate_doc_id`: UUID (FK -> documents.id)
 - `taken_by_agency_officer_id`: UUID (FK -> users.id)
 - `handed_over_by_cala_id`: UUID (FK -> users.id)
+- `remarks`: TEXT
 
 ---
 
-### 2.5 Rehabilitation & Resettlement (R&R)
+### 2.5 Rehabilitation & Resettlement (R&R) — Phase 6 Enhanced
 
-#### `randr_schemes` & `affected_families`
-- `randr_schemes`: `id` (PK), `project_id` (FK), `scheme_title`, `resettlement_site_name`, `total_plots_planned`, `total_plots_allotted`, `sanctioned_budget_cr`, `spent_budget_cr`, `status`.
-- `affected_families`:
-  - `id`: UUID (PK)
-  - `scheme_id`: UUID (FK -> randr_schemes.id)
-  - `head_of_family_name`: VARCHAR(100)
-  - `family_type`: VARCHAR(30) (`PAF_AFFECTED_ONLY`, `PDF_DISPLACED_REQUIRING_RELOCATION`)
-  - `social_category`: VARCHAR(20) (`GEN`, `OBC`, `SC`, `ST`, `BPL`)
-  - `entitled_plot_sqyd`: NUMERIC(8, 2)
-  - `allotted_plot_number`: VARCHAR(50)
-  - `subsistence_grant_inr`: NUMERIC(12, 2) (RFCTLARR 2nd Schedule entitlement)
-  - `transportation_allowance_inr`: NUMERIC(12, 2)
-  - `one_time_resettlement_allowance_inr`: NUMERIC(12, 2)
-  - `is_grant_disbursed`: BOOLEAN (DEFAULT FALSE)
-  - `rehabilitation_status`: VARCHAR(30) (`SURVEYED`, `SCHEME_APPROVED`, `PLOT_ALLOTTED`, `SETTLED`)
+#### `randr_schemes` (Statutory R&R Framework Administration)
+- `id`: UUID (PK)
+- `project_id`: UUID (FK -> projects.id)
+- `scheme_title`: VARCHAR(200) (NOT NULL)
+- `scheme_reference`: VARCHAR(100) (UNIQUE, e.g. `RNR/2026/001`)
+- `scheme_type`: VARCHAR(50) (`RESETTLEMENT_COLONY`, `COMPOSITE_ASSISTANCE`, `INFRASTRUCTURE_AMENITY`, `CASH_COMPOSITE`)
+- `resettlement_site_name`: VARCHAR(200)
+- `total_plots_planned`: INT
+- `total_plots_allotted`: INT
+- `sanctioned_budget_cr`: NUMERIC(12, 4)
+- `spent_budget_cr`: NUMERIC(12, 4) (DEFAULT 0)
+- `status`: VARCHAR(30) (`DRAFT`, `APPROVED`, `IN_PROGRESS`, `COMPLETED`)
+- `target_completion_date`: DATE (NULL)
+- `approval_date`: DATE (NULL)
+- `approved_by_user_id`: UUID (FK -> users.id, NULL)
+- `remarks`: TEXT (NULL)
+
+#### `affected_families` (Project Affected Families — PAF/PDF Census)
+- `id`: UUID (PK)
+- `scheme_id`: UUID (FK -> randr_schemes.id)
+- `family_reference_id`: VARCHAR(20) (UNIQUE, e.g. `AF-0001`)
+- `parcel_id`: UUID (FK -> land_parcels.id, NULL — cadastral linkage)
+- `land_owner_id`: UUID (FK -> land_owners.id, NULL — ownership linkage)
+- `head_of_family_name`: VARCHAR(100)
+- `family_type`: VARCHAR(50) (`PAF_AFFECTED_ONLY`, `PDF_DISPLACED_REQUIRING_RELOCATION`)
+- `displacement_category`: VARCHAR(50) (`DISPLACED_TITLE_HOLDER`, `DISPLACED_SHARECROPPER`, `DISPLACED_TENANT`, `LIVELIHOOD_AFFECTED`, `NON_TITLE_HOLDER`)
+- `social_category`: VARCHAR(20) (`GEN`, `OBC`, `SC`, `ST`, `BPL`)
+- `village_name`: VARCHAR(100) (NULL)
+- `family_members_count`: INT (DEFAULT 1)
+- `contact_masked`: VARCHAR(50) (NULL — masked PII, e.g. `+91 98XXX X4201`)
+- `eligibility_status`: VARCHAR(30) (`PENDING`, `UNDER_REVIEW`, `ELIGIBLE`, `INELIGIBLE`, `DISPUTED`, `APPROVED`)
+- `eligibility_category`: VARCHAR(100) (NULL — e.g. `SCHEDULE_II_BENEFICIARY`)
+- `eligibility_assessment_date`: DATE (NULL)
+- `assessing_authority`: VARCHAR(200) (NULL)
+- `eligibility_basis`: TEXT (NULL — statutory legal basis)
+- `eligibility_remarks`: TEXT (NULL)
+- `entitled_plot_sqyd`: NUMERIC(8, 2)
+- `allotted_plot_number`: VARCHAR(50)
+- `subsistence_grant_inr`: NUMERIC(12, 2) (RFCTLARR 2nd Schedule entitlement)
+- `transportation_allowance_inr`: NUMERIC(12, 2)
+- `one_time_resettlement_allowance_inr`: NUMERIC(12, 2)
+- `is_grant_disbursed`: BOOLEAN (DEFAULT FALSE)
+- `rehabilitation_status`: VARCHAR(30) (`ENUMERATED`, `ELIGIBILITY_VERIFIED`, `GRANT_DISBURSED`, `PLOT_ALLOTTED`, `SETTLED`)
+
+#### `randr_allotments` (Entitlement Delivery Ledger)
+- `id`: UUID (PK)
+- `family_id`: UUID (FK -> affected_families.id)
+- `scheme_id`: UUID (FK -> randr_schemes.id, NULL)
+- `allotment_reference`: VARCHAR(100) (UNIQUE, e.g. `ALLOT/2026/AF-0001/001`)
+- `entitlement_category`: VARCHAR(100) (`HOUSING_RESETTLEMENT`, `SUBSISTENCE_GRANT`, `LIVELIHOOD_SUPPORT`, `TRANSPORT_ALLOWANCE`)
+- `allotment_type`: VARCHAR(30) (`PLOT`, `HOUSING_UNIT`, `CASH_GRANT`, `ANNUITY`, `LIVELIHOOD_ASSET`, `TRAINING_SEAT`, `OTHER`)
+- `asset_identifier`: VARCHAR(200) (NULL — e.g. `Plot A-15, Sector 3 Enclave`)
+- `allotment_order_no`: VARCHAR(100) (NULL — e.g. `CALA/RR/2026/ORD-142`)
+- `allotment_date`: DATE (NULL)
+- `delivery_date`: DATE (NULL)
+- `allocated_value_inr`: NUMERIC(14, 2) (NULL)
+- `status`: VARCHAR(30) (`SANCTIONED`, `ALLOTTED`, `DELIVERED`, `CANCELLED`)
+- `responsible_authority`: VARCHAR(200) (NULL)
+- `remarks`: TEXT (NULL)
+
 
 ---
 

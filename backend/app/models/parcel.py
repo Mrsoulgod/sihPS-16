@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from app.models.disbursement import Disbursement
     from app.models.possession import Possession
     from app.models.notification import ObjectionsClaims
+    from app.models.randr import AffectedFamily
 
 
 class LandParcel(Base):
@@ -48,6 +49,7 @@ class LandParcel(Base):
     disbursements: Mapped[List["Disbursement"]] = relationship("Disbursement", back_populates="parcel")
     possession: Mapped[Optional["Possession"]] = relationship("Possession", back_populates="parcel", uselist=False)
     objections: Mapped[List["ObjectionsClaims"]] = relationship("ObjectionsClaims", back_populates="parcel")
+    affected_families: Mapped[List["AffectedFamily"]] = relationship("AffectedFamily", back_populates="parcel")
 
     def __repr__(self) -> str:
         return f"<LandParcel(khasra='{self.khasra_number}', area_sqm={self.acquired_area_sqm}, status='{self.acquisition_status}')>"

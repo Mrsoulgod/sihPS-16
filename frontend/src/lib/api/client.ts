@@ -21,6 +21,7 @@ export interface ApiClientFunction {
   get<T>(endpoint: string, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
   post<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
   put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
+  patch<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
   delete<T>(endpoint: string, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
 }
 
@@ -55,16 +56,28 @@ export const apiClient: ApiClientFunction = async function <T>(
 
   const json = await response.json();
 
-  if (!response.ok || !json.success) {
-    const errorData = json.error || {
+  if (!response.ok || (json && typeof json === "object" && "success" in json && json.success === false)) {
+    const errorData = json?.error || {
       code: "API_ERROR",
-      message: json.message || "An unexpected error occurred.",
+      message: json?.message || "An unexpected error occurred.",
       details: [],
     };
     throw new ApiClientError(response.status, errorData);
   }
 
-  return json as ApiSuccessResponse<T>;
+  if (json && typeof json === "object" && "success" in json) {
+    return json as ApiSuccessResponse<T>;
+  }
+
+  return {
+    success: true,
+    data: json,
+    message: "Success",
+    metadata: {
+      timestamp: new Date().toISOString(),
+      request_id: "",
+    },
+  } as ApiSuccessResponse<T>;
 } as ApiClientFunction;
 
 apiClient.get = async function <T>(
@@ -94,6 +107,18 @@ apiClient.put = async function <T>(
   return apiClient<T>(endpoint, {
     ...options,
     method: "PUT",
+    body: data !== undefined ? JSON.stringify(data) : undefined,
+  });
+};
+
+apiClient.patch = async function <T>(
+  endpoint: string,
+  data?: any,
+  options?: RequestInit
+): Promise<ApiSuccessResponse<T>> {
+  return apiClient<T>(endpoint, {
+    ...options,
+    method: "PATCH",
     body: data !== undefined ? JSON.stringify(data) : undefined,
   });
 };

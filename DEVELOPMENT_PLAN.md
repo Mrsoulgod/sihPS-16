@@ -117,24 +117,45 @@ Phase 8: End-to-End Verification & Benchmark Data Polish
 - Render project corridor right-of-way buffer and color-coded village parcel polygons.
 - Implement parcel inspector side-drawer with owner details, valuation breakdown, and status actions.
 
-### Phase 5: Compensation Disbursement (PFMS) & Possession Handover
-- Build PFMS payment batch generation and simulated DBT webhook callback.
-- Generate bank UTR numbers and update disbursement status in real time.
-- Implement Section 38 Possession Handover certificate generation.
+### Phase 5: Configurable Compensation Assessment, Section 23/30 Awards, PFMS Disbursements & Section 38 Possession [COMPLETED]
+- Implemented **Configurable Compensation Assessment Framework** with transparent component breakdown (Base Land Value + Factors + Asset Valuation + Statutory Additional Amount + Solatium).
+- Codified Section 23/30 statutory awards with **Demo e-Sign / Approval Stamp** cryptographic hash.
+- Implemented **PFMS-Compatible / Simulated Payment Workflow** with Direct Benefit Transfer (DBT) batch execution, masked PII, and mock bank UTR tracking ($Disbursed \le Awarded$).
+- Implemented **Section 38 Statutory Land Possession Handover** with 4 prerequisite compliance checks, and treated Section 40 urgency strictly as an exceptional pathway.
+- Integrated project detail 360° view with Lifecycle Pipeline Funnel, Financial Pipeline Ledger, and 4 dedicated operational tabs.
+- Full automated test coverage: 40/40 passing pytest unit/integration tests and 0-error Next.js production build.
 
-### Phase 6: Rehabilitation & Resettlement (R&R) & Document Management
-- Implement PAF/PDF enumeration and 2nd Schedule entitlement calculator.
-- Build resettlement colony plot allotment and subsistence grant tracker.
-- Implement SHA-256 document uploader and live cryptographic integrity validator.
+### Phase 6: Rehabilitation & Resettlement (R&R) & Affected Families Management [COMPLETED]
+- Implemented **R&R Scheme Administration** with statutory RFCTLARR schedule tracking, budget utilization monitoring (sanctioned vs spent ₹ Cr), and 4-stage lifecycle (`DRAFT` → `APPROVED` → `IN_PROGRESS` → `COMPLETED`).
+- Built **Affected Families (PAF/PDF) Census Module** with full family enumeration, displacement categorization (`DISPLACED_TITLE_HOLDER`, `SHARECROPPER`, `TENANT`, `LIVELIHOOD_AFFECTED`, `NON_TITLE_HOLDER`), and social category tagging (`GEN`, `OBC`, `SC`, `ST`, `BPL`).
+- Implemented **Configurable R&R Eligibility Assessment** with statutory basis documentation, assessing authority tracking, assessment date, and eligibility category classification.
+- Built **Entitlement Delivery Ledger** (`randr_allotments`) tracking plot allotments, housing units, cash grants, annuities, livelihood assets, and training seats with allocation values and responsible authority.
+- Integrated **7-Node 360° Acquisition Trace** in Affected Family detail view: Project → Parcel → Owner → Compensation → Award → Disbursement → Possession → R&R Scheme.
+- Integrated **R&R Progress Tab** in Project 360° detail view with 7-stage acquisition funnel visualization and R&R statistics.
+- Added **R&R Overview Card** to Command Dashboard with real-time PAF/PDF counts and resettlement progress.
+- Extended RBAC `require_roles` for flexible list/varargs invocation patterns.
+- Full automated test coverage: 47/47 passing pytest unit/integration tests and 0-error Next.js production build (20 pages generated).
 
-### Phase 7: Analytics, Predictive Risk Engine & MIS Reports
-- Build National and State KPI dashboards (funnel charts, financial burn s-curves).
-- Implement the 5-factor Predictive Risk Scoring algorithm (0–100).
-- Build MIS report generator with PDF/Excel export capabilities.
+### Phase 7: Analytics, Predictive Risk Intelligence & MIS Reporting [COMPLETED]
+- Built **National Analytics Command Center** (`/analytics`) featuring dynamic KPIs, 8-stage acquisition funnel (distinct units: count, acres, ₹ Cr, PAFs), state & district breakdown, time-series milestone timeline, and automated bottleneck radar.
+- Implemented **Predictive Risk Intelligence Engine** (`/analytics/risk`) with transparent, deterministic 0–100 rule-based scoring across 5 statutory factors (Workflow Delay, Parcel Verification, Compensation/Disbursement, Disputes, R&R/Possession Lag) without fake ML claims.
+- Integrated **Project Risk & Analytics 360° Tab** directly into `/projects/[projectId]` with factor breakdown, primary risk drivers, and decision-support guidance.
+- Built **Statutory MIS Reports Center** (`/reports`) supporting 7 statutory standard report templates with live interactive paginated preview and summary KPIs.
+- Implemented **Multi-Format Export Engine**: Government-styled native PDF export with ReportLab (NLAMS branding, tabular layout, dynamic page numbering) and structured multi-sheet Excel export (.xlsx) via OpenPyXL.
+- Enforced strict backend RBAC jurisdiction scoping (`CENTRAL`, `STATE`, `DISTRICT`, `AGENCY`, `FIELD`, `ADMIN`) across all analytics queries and exports.
+- Added data quality reconciliation audit engine verifying mathematical consistency ($Disbursed \le Awarded$, $Acquired \le Proposed$).
 
-### Phase 8: Comprehensive Demo Seeding & Polish
-- Seed the "Delhi–Jaipur Expressway Expansion (NH-48 Package IV)" project with 500 proposed acres, 420 acquired acres, ₹620 Cr assessed, ₹570 Cr paid, 1,240 PAFs.
-- Conduct end-to-end integration walkthrough across all 6 stakeholder roles.
+### SIH Requirement Gap-Closure Phase [COMPLETED]
+- **Government Integration Gateway (`/integrations`)**: Built 4 standard sandbox gateway connectors (Digital Land Records Bhulekh/Bhoomi, ISRO Bhuvan Spatial Cadastre, PFMS DBT Financial, National SMS Gateway) with live interactive synchronization simulation, latency telemetry, and SHA-256 audit verification.
+- **Master Data & Standardization (`/master-data`)**: Implemented standardized administrative geography hierarchy (State → District → Tehsil → Village), lifecycle taxonomy codification, and RFCTLARR 2013 statutory parameters (100% Solatium, 12% Interest, SLA limits, Risk weights).
+- **Statutory Document Vault & Version Control (`/documents`)**: Implemented self-referential document versioning chain (`parent_document_id`, `version`, `is_current_version`), version history timeline, and real-time cryptographic SHA-256 integrity verification.
+- **Revenue Field Officer Survey Portal (`/field`)**: Built mobile-responsive field survey interface for `FIELD_OFFICER` role with assigned parcel queue, 4-point statutory verification checklist, GPS coordinate capture, tree enumeration, and Draft / CALA Submission actions.
+- **Multilingual Support (GAP 5)**: Created English & हिन्दी (`hi`) dictionary localization system with persistent `LanguageContext` and header switcher component.
+- **Security & Integrity Polish**: Replaced misleading localhost encryption claims with authentic "Role-Based Statutory Access", verified all 6 demo role accounts on PostgreSQL + PostGIS canonical store.
+
+### Phase 8: Comprehensive Demo Seeding & Polish [COMPLETED]
+- Seeded the "Delhi–Jaipur Expressway Expansion (NH-48 Package IV)" project with 500 proposed acres, 420 acquired acres, ₹620 Cr assessed, ₹570 Cr paid, 1,240 PAFs.
+- Verified end-to-end integration walkthrough across all 6 stakeholder roles.
 
 ---
 

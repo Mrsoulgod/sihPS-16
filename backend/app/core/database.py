@@ -18,6 +18,11 @@ if not (settings.DATABASE_URL.startswith("postgresql://") or settings.DATABASE_U
     )
 
 # PostgreSQL async connection pool configuration
+connect_args = {}
+if "supabase.com" in settings.DATABASE_URL or "pooler" in settings.DATABASE_URL:
+    connect_args = {"statement_cache_size": 0}
+
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
@@ -25,6 +30,7 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
+    connect_args=connect_args,
 )
 
 AsyncSessionLocal = async_sessionmaker(

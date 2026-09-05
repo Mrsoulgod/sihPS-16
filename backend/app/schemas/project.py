@@ -62,5 +62,18 @@ class ProjectDetailResponse(BaseModel):
     randr_completion_percent: float
     risk_score: int
     parcels_count: int
+    verified_parcels_count: int = 0
+    assessed_parcels_count: int = 0
+    awards_count: int = 0
+    disbursed_parcels_count: int = 0
+    possession_parcels_count: int = 0
+    parcels_pending_possession_count: int = 0
+    total_awarded_cr: float = 0.0
+    outstanding_compensation_cr: float = 0.0
+    randr_schemes_count: int = 0
+    eligible_families_count: int = 0
+    assisted_families_count: int = 0
+    pending_families_count: int = 0
     created_at: Optional[datetime] = None
     alignment_geojson: Optional[Any] = None
+

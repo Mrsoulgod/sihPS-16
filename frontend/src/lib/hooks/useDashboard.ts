@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchDashboardSummary } from "../api/dashboard";
+import { fetchDashboardSummary, fetchPublicDashboardSummary } from "../api/dashboard";
 import { useAuth } from "./useAuth";
 
 export function useDashboard(stateId?: string, districtId?: string) {
@@ -23,6 +23,18 @@ export function useDashboard(stateId?: string, districtId?: string) {
     },
     enabled: isAuthenticated && !!user,
     staleTime: 1000 * 60 * 2, // 2 minutes
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function usePublicDashboard(stateId?: string, districtId?: string) {
+  return useQuery({
+    queryKey: ["public-dashboard-summary", stateId, districtId],
+    queryFn: async () => {
+      const res = await fetchPublicDashboardSummary(stateId, districtId);
+      return res.data;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
     refetchOnWindowFocus: false,
   });
 }

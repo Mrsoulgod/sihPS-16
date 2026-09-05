@@ -20,6 +20,29 @@ class DashboardKpiSummary(BaseModel):
     total_paf_count: int
     total_pdf_count: int
     avg_randr_completion_percent: float
+    eligible_families: int = 0
+    families_assisted: int = 0
+    families_completed: int = 0
+    pending_rr_cases: int = 0
+
+
+class RAndRProgressStage(BaseModel):
+    stage: str
+    count: int
+    percentage: float
+
+
+class RAndROverview(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    total_affected_families: int
+    eligible_families: int
+    families_approved: int
+    families_assisted: int
+    families_completed: int
+    pending_cases: int
+    completion_percent: float
+    progress_stages: List[RAndRProgressStage]
 
 
 class AcquisitionOverview(BaseModel):
@@ -108,3 +131,5 @@ class DashboardSummaryResponse(BaseModel):
     attention_projects: List[AttentionProjectItem]
     recent_activity: List[RecentActivityItem]
     quick_actions: List[QuickActionItem]
+    randr_overview: Optional[RAndROverview] = None
+

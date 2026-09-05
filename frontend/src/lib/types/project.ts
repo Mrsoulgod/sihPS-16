@@ -51,6 +51,16 @@ export interface ProjectDetailResponse {
   randr_completion_percent: number;
   risk_score: number;
   parcels_count: number;
+  total_parcels_count?: number;
+  verified_parcels_count?: number;
+  assessed_parcels_count?: number;
+  awards_count?: number;
+  disbursed_parcels_count?: number;
+  possession_parcels_count?: number;
+  total_assessed_compensation_cr?: number;
+  total_awarded_cr?: number;
+  total_disbursed_compensation_cr?: number;
+  outstanding_compensation_cr?: number;
   created_at?: string;
   alignment_geojson?: any;
 }
