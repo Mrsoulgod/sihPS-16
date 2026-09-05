@@ -29,12 +29,15 @@ export const apiClient: ApiClientFunction = async function <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiSuccessResponse<T>> {
-  let normalized = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-  if (!normalized.startsWith("/api/v1")) {
-    normalized = `/api/v1${normalized}`;
-  }
-
-  const url = `${API_BASE_URL}${normalized}`;
+  const rawBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000")
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/api\/v1\/?$/, "");
+  
+  let cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  cleanEndpoint = cleanEndpoint.replace(/^\/api\/v1/, "");
+  
+  const url = `${rawBase}/api/v1${cleanEndpoint}`;
   
   const headers = new Headers(options.headers || {});
   if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
