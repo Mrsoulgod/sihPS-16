@@ -17,8 +17,9 @@ interface TopKpiCardsProps {
 }
 
 export function TopKpiCards({ kpis }: TopKpiCardsProps) {
-  const affectedFamilies = kpis.affected_families ?? kpis.total_paf_count;
-  const displacedFamilies = kpis.displaced_families ?? kpis.total_pdf_count;
+  const affectedFamilies = kpis.affected_families ?? kpis.total_paf_count ?? 0;
+  const displacedFamilies = kpis.displaced_families ?? kpis.total_pdf_count ?? 0;
+  const avgRandr = kpis.avg_randr_completion_percent ?? 0;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -197,14 +198,14 @@ export function TopKpiCards({ kpis }: TopKpiCardsProps) {
         </div>
         <div className="mt-2 flex items-baseline gap-2">
           <span className="text-2xl sm:text-3xl font-bold font-serif text-[#138808]">
-            {kpis.avg_randr_completion_percent}%
+            {avgRandr}%
           </span>
-          <span className="text-xs text-slate-500">Model Colony Dev</span>
+          <span className="text-xs font-medium text-slate-500">Model Colony Dev</span>
         </div>
         <div className="mt-3 w-full bg-slate-100 rounded-full h-2 overflow-hidden">
           <div
             className="bg-[#138808] h-2 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, kpis.avg_randr_completion_percent)}%` }}
+            style={{ width: `${Math.min(100, avgRandr)}%` }}
           />
         </div>
       </div>
