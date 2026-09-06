@@ -24,7 +24,7 @@ async def test_login_success_with_email():
         assert data["token_type"] == "bearer"
         assert data["expires_in_seconds"] > 0
         user = data["user"]
-        assert user["username"] == "central_officer"
+        assert user["username"] == "central_admin"
         assert user["email"] == "central@gov.demo"
         assert user["role_id"] == "ROLE_CENTRAL_OFFICER"
         assert "hashed_password" not in user
@@ -113,10 +113,11 @@ async def test_get_me_profile():
         body = me_res.json()
         assert body["success"] is True
         data = body["data"]
-        assert data["username"] == "state_officer"
+        assert data["username"] == "state_rj_officer"
         assert data["role_id"] == "ROLE_STATE_OFFICER"
         assert data["state_id"] == "IN-RJ"
         assert "hashed_password" not in data
+
 
 
 @pytest.mark.asyncio

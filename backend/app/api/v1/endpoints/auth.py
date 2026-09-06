@@ -126,6 +126,12 @@ async def login(
     if not user:
         demo_data = get_canonical_demo_data(payload.username_or_email)
         if demo_data:
+            if payload.password not in ["Password@123", "DemoPass@123", settings.DEMO_USER_PASSWORD]:
+                raise DomainException(
+                    status_code=401,
+                    code="INVALID_CREDENTIALS",
+                    message="Invalid username/email or password.",
+                )
             user = create_demo_user_model(demo_data)
         else:
             raise DomainException(
@@ -143,6 +149,7 @@ async def login(
                     code="INVALID_CREDENTIALS",
                     message="Invalid username/email or password.",
                 )
+
 
     if not user.is_active:
         raise DomainException(
