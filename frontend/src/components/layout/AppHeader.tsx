@@ -8,11 +8,11 @@ import {
   Menu,
   X,
   LogOut,
-  ChevronDown,
   Building,
   Shield,
   MapPin,
   Landmark,
+  UserCheck,
 } from "lucide-react";
 import { RoleCode } from "@/lib/types/auth";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
@@ -22,39 +22,40 @@ interface AppHeaderProps {
   isSidebarOpen: boolean;
 }
 
-const DEMO_ROLES = [
-  { id: RoleCode.CENTRAL_OFFICER, label: "Central Officer", desc: "National Ministry Pipeline" },
-  { id: RoleCode.STATE_OFFICER, label: "State Officer", desc: "Rajasthan Revenue Dept" },
-  { id: RoleCode.DISTRICT_OFFICER, label: "District Collector / CALA", desc: "Jaipur Land Authority" },
-  { id: RoleCode.PROJECT_AGENCY, label: "Implementing Agency", desc: "NHAI Project Director" },
-  { id: RoleCode.FIELD_OFFICER, label: "Field Surveyor", desc: "Kotputli Revenue Inspector" },
-  { id: RoleCode.ADMIN, label: "System Administrator", desc: "Global Security & Audit" },
-];
-
 export function AppHeader({ onToggleSidebar, isSidebarOpen }: AppHeaderProps) {
-  const { user, logout, switchRole } = useAuth();
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const { user, logout } = useAuth();
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
-
-  const handleRoleSelect = async (targetRole: string) => {
-    try {
-      setIsSwitching(true);
-      setShowRoleMenu(false);
-      await switchRole(targetRole);
-    } catch (err) {
-      console.error("Failed to switch role:", err);
-    } finally {
-      setIsSwitching(false);
-    }
-  };
 
   const getJurisdictionDisplay = () => {
     if (!user) return "";
+    if (user.jurisdiction?.scope_display) return user.jurisdiction.scope_display;
     if (user.district_name) return `${user.district_name}, ${user.state_name || ""}`;
     if (user.state_name) return user.state_name;
-    if (user.role_id === RoleCode.CENTRAL_OFFICER || user.role_id === RoleCode.ADMIN) return "All India (National)";
+    if (user.role_id === RoleCode.CENTRAL_OFFICER || user.role_id === RoleCode.ADMIN || user.role_id === RoleCode.SUPER_ADMIN) {
+      return "All India (National)";
+    }
     return user.organization || "National Project Scope";
+  };
+
+  const getRoleBadgeStyle = (roleId?: string) => {
+    switch (roleId) {
+      case RoleCode.CENTRAL_OFFICER:
+      case RoleCode.ADMIN:
+      case RoleCode.SUPER_ADMIN:
+        return "bg-amber-950 text-amber-300 border-amber-700/50";
+      case RoleCode.STATE_OFFICER:
+        return "bg-blue-950 text-blue-300 border-blue-700/50";
+      case RoleCode.DISTRICT_OFFICER:
+        return "bg-emerald-950 text-emerald-300 border-emerald-700/50";
+      case RoleCode.PROJECT_AGENCY:
+        return "bg-purple-950 text-purple-300 border-purple-700/50";
+      case RoleCode.FIELD_OFFICER:
+        return "bg-cyan-950 text-cyan-300 border-cyan-700/50";
+      case RoleCode.SOCIAL_OFFICER:
+        return "bg-rose-950 text-rose-300 border-rose-700/50";
+      default:
+        return "bg-slate-800 text-slate-300 border-slate-700";
+    }
   };
 
   return (
@@ -102,51 +103,38 @@ export function AppHeader({ onToggleSidebar, isSidebarOpen }: AppHeaderProps) {
             </div>
             <input
               type="text"
-              placeholder="Search Project, Khasra, Gazette No., Village... (Ctrl+K)"
-              className="w-full pl-9 pr-12 py-1.5 bg-slate-900/60 border border-slate-700 rounded-md text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+              placeholder="Search parcels, gazette notifications, awards, claims..."
+              className="w-full pl-9 pr-4 py-1.5 bg-slate-900/80 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-all font-sans"
             />
-            <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
-              <kbd className="px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-slate-800 border border-slate-700 rounded">
-                ⌘K
-              </kbd>
-            </div>
           </div>
         </div>
 
-        {/* Right: Notifications, Language, Role Switcher, User Chip */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right: Language + Alerts + Authenticated Identity + Logout */}
+        <div className="flex items-center gap-3">
+          {/* Official Language Selector */}
           <LanguageSwitcher />
 
-          {/* Statutory Alerts Notification Bell */}
+          {/* Statutory Notifications Bell */}
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowNotificationMenu(!showNotificationMenu)}
-              className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-slate-800 focus:outline-none relative transition-colors"
-              aria-label="View notifications"
+              className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 relative focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
+              title="Statutory Alerts & Workflow Actions"
             >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-[#0B2545]" />
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#FF9933] ring-2 ring-[#0B2545]" />
             </button>
 
             {showNotificationMenu && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 text-slate-900">
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-2xl border border-slate-200 py-2 z-50 text-slate-900 text-xs">
                 <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                    Statutory Alerts
-                  </span>
-                  <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-1.5 py-0.5 rounded">
-                    3 Pending
-                  </span>
+                  <span className="font-bold text-slate-800">Operational Alerts</span>
+                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">2 Action Required</span>
                 </div>
-                <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 text-xs">
+                <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
                   <div className="px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                    <p className="font-semibold text-slate-900">Section 15 Hearing Scheduled</p>
-                    <p className="text-slate-500 text-[11px] mt-0.5">NH-48 Package IV: 2 objections pending before CALA Jaipur.</p>
-                    <span className="text-[10px] text-amber-700 font-medium">Due in 4 days</span>
-                  </div>
-                  <div className="px-4 py-2.5 hover:bg-slate-50 transition-colors">
-                    <p className="font-semibold text-slate-900">PFMS DBT Compensation Batch</p>
+                    <p className="font-semibold text-slate-900">Direct Benefit Transfer Ready</p>
                     <p className="text-slate-500 text-[11px] mt-0.5">Batch ₹42.50 Cr authorized for Kotputli revenue villages.</p>
                     <span className="text-[10px] text-emerald-700 font-medium">Ready for disbursement</span>
                   </div>
@@ -160,91 +148,38 @@ export function AppHeader({ onToggleSidebar, isSidebarOpen }: AppHeaderProps) {
             )}
           </div>
 
-          {/* Evaluator 1-Click Role Switcher */}
-          <div className="relative">
-            <button
-              type="button"
-              disabled={isSwitching}
-              onClick={() => setShowRoleMenu(!showRoleMenu)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs text-slate-200 transition-colors focus:outline-none"
-              title="Evaluator Role Switcher: Click to test other user personas"
-            >
-              <Shield className="h-3.5 w-3.5 text-emerald-400" />
-              <span className="hidden sm:inline font-medium">
-                {isSwitching ? "Switching..." : "Role Switcher"}
-              </span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
-            </button>
-
-            {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-2xl border border-slate-200 py-1.5 z-50 text-slate-900">
-                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50">
-                  <p className="text-[11px] font-bold uppercase text-slate-700 tracking-wider">
-                    Evaluator Role Switcher
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    Select a role to re-scope the dashboard instantly
-                  </p>
-                </div>
-                <div className="py-1">
-                  {DEMO_ROLES.map((role) => {
-                    const isCurrent = user?.role_id === role.id;
-                    return (
-                      <button
-                        key={role.id}
-                        type="button"
-                        onClick={() => handleRoleSelect(role.id)}
-                        className={`w-full text-left px-3 py-2 text-xs flex items-start justify-between transition-colors ${
-                          isCurrent
-                            ? "bg-emerald-50 text-emerald-950 font-semibold"
-                            : "hover:bg-slate-50 text-slate-800"
-                        }`}
-                      >
-                        <div>
-                          <div className="font-medium">{role.label}</div>
-                          <div className="text-[11px] text-slate-500 font-normal">
-                            {role.desc}
-                          </div>
-                        </div>
-                        {isCurrent && (
-                          <span className="text-[10px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded">
-                            Active
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* User Profile & Jurisdiction Chip */}
+          {/* Authenticated User Identity & Jurisdiction Chip */}
           {user && (
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-700">
+            <div className="flex items-center gap-2.5 pl-3 border-l border-slate-700">
               <div className="h-8 w-8 rounded-full bg-emerald-800 border border-emerald-500 flex items-center justify-center font-bold text-xs text-white shadow-sm">
                 {user.full_name?.charAt(0) || "U"}
               </div>
               <div className="hidden lg:block text-left leading-tight">
-                <div className="text-xs font-semibold text-white truncate max-w-[140px]">
-                  {user.full_name}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-white truncate max-w-[150px]">
+                    {user.full_name}
+                  </span>
+                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border uppercase tracking-wider ${getRoleBadgeStyle(user.role_id)}`}>
+                    {user.role_name || user.role_id.replace("ROLE_", "")}
+                  </span>
                 </div>
-                <div className="text-[10px] text-slate-300 flex items-center gap-1">
-                  <MapPin className="h-2.5 w-2.5 text-emerald-400 inline" />
-                  <span className="truncate max-w-[130px]">{getJurisdictionDisplay()}</span>
+                <div className="text-[10px] text-slate-300 flex items-center gap-1 mt-0.5">
+                  <MapPin className="h-2.5 w-2.5 text-emerald-400 shrink-0 inline" />
+                  <span className="truncate max-w-[160px] text-slate-300 font-medium">{getJurisdictionDisplay()}</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Logout Action */}
+          {/* Explicit Sign Out Action */}
           <button
             type="button"
             onClick={logout}
-            className="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-800 focus:outline-none transition-colors"
-            title="Sign out of NLAMS"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950/80 hover:border-rose-700/60 border border-slate-700 text-slate-300 hover:text-rose-200 text-xs font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+            title="Sign out of NLAMS session"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5 text-rose-400" />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </div>

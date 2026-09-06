@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
@@ -10,29 +11,83 @@ from app.core.database import get_db
 from app.core.exceptions import DomainException
 from app.core.security import verify_password, create_access_token
 from app.core.permissions import get_current_user
+from app.core.demo_users import get_permissions_for_role, get_canonical_demo_data, create_demo_user_model
 from app.models.user import User
 from app.models.role import Role
 from app.models.audit import AuditLog
-from app.schemas.auth import LoginRequest, TokenResponse, UserSummaryResponse, SwitchRoleRequest
+from app.schemas.auth import LoginRequest, TokenResponse, UserSummaryResponse, JurisdictionSummary
 
 router = APIRouter()
 
 
+
+def build_jurisdiction_summary(user: User) -> JurisdictionSummary:
+    """Derives canonical jurisdiction hierarchy and scope display for the authenticated user."""
+    role_id = user.role_id or ""
+    state_id = user.state_id
+    state_name = user.state.name if user.state else ("Rajasthan" if state_id == "IN-RJ" else None)
+    district_id = user.district_id
+    district_name = user.district.name if user.district else ("Jaipur" if district_id == "DST-JAI" else None)
+
+    # Check demo metadata if available
+    demo_data = get_canonical_demo_data(user.username) or {}
+
+    if role_id in ("ROLE_CENTRAL_OFFICER", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"):
+        level = "CENTRAL"
+        scope_display = "All India (National Mandate)"
+    elif role_id == "ROLE_STATE_OFFICER":
+        level = "STATE"
+        scope_display = f"{state_name or 'State'} (State Mandate)"
+    elif role_id == "ROLE_DISTRICT_OFFICER":
+        level = "DISTRICT"
+        scope_display = f"{district_name or 'District'}, {state_name or ''}"
+    elif role_id == "ROLE_PROJECT_AGENCY":
+        level = "PROJECT"
+        scope_display = demo_data.get("scope_display") or f"{user.organization} (Project Scope)"
+    elif role_id == "ROLE_FIELD_OFFICER":
+        level = "FIELD"
+        scope_display = demo_data.get("scope_display") or f"Tehsil Field Unit, {district_name or ''}"
+    elif role_id == "ROLE_SOCIAL_OFFICER":
+        level = "SOCIAL"
+        scope_display = demo_data.get("scope_display") or f"{district_name or 'District'} R&R Schemes"
+    else:
+        level = "OPERATIONAL"
+        scope_display = user.organization or "Authorized Mandate"
+
+    return JurisdictionSummary(
+        level=level,
+        state_id=state_id,
+        state_name=state_name,
+        district_id=district_id,
+        district_name=district_name,
+        tehsil_id=demo_data.get("tehsil_id"),
+        project_id=demo_data.get("project_id"),
+        scope_display=scope_display,
+    )
+
+
 def build_user_summary(user: User) -> UserSummaryResponse:
-    """Helper to convert User model into UserSummaryResponse schema."""
+    """Helper to convert User model into rich UserSummaryResponse schema."""
+    role_name = user.role.name if user.role else user.role_id
+    state_name = user.state.name if user.state else ("Rajasthan" if user.state_id == "IN-RJ" else None)
+    district_name = user.district.name if user.district else ("Jaipur" if user.district_id == "DST-JAI" else None)
+
     return UserSummaryResponse(
         id=user.id,
         username=user.username,
         email=user.email,
         full_name=user.full_name,
+        display_name=f"{user.full_name} ({user.designation})",
         designation=user.designation,
         organization=user.organization,
         role_id=user.role_id,
-        role_name=user.role.name if user.role else user.role_id,
+        role_name=role_name,
         state_id=user.state_id,
-        state_name=user.state.name if user.state else None,
+        state_name=state_name,
         district_id=user.district_id,
-        district_name=user.district.name if user.district else None,
+        district_name=district_name,
+        jurisdiction=build_jurisdiction_summary(user),
+        permissions=get_permissions_for_role(user.role_id),
         is_active=user.is_active,
         last_login_at=user.last_login_at,
     )
@@ -63,13 +118,12 @@ async def login(
                 )
             )
         )
-        result = await db.execute(stmt)
+        result = await asyncio.wait_for(db.execute(stmt), timeout=2.0)
         user = result.scalar_one_or_none()
     except Exception:
         user = None
 
     if not user:
-        from app.core.demo_users import get_canonical_demo_data, create_demo_user_model
         demo_data = get_canonical_demo_data(payload.username_or_email)
         if demo_data:
             user = create_demo_user_model(demo_data)
@@ -82,7 +136,6 @@ async def login(
     else:
         if not verify_password(payload.password, user.hashed_password):
             # Also allow standard demo passwords for demo accounts
-            from app.core.demo_users import get_canonical_demo_data
             demo_data = get_canonical_demo_data(payload.username_or_email)
             if not demo_data or payload.password not in ["Password@123", "DemoPass@123", settings.DEMO_USER_PASSWORD]:
                 raise DomainException(
@@ -147,97 +200,13 @@ async def get_my_profile(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Retrieve authenticated user's profile and active permissions.
+    Retrieve authenticated user's profile, jurisdiction hierarchy, and active permissions.
     """
     now_iso = datetime.now(timezone.utc).isoformat()
     return {
         "success": True,
         "data": build_user_summary(current_user).model_dump(),
         "message": "User profile retrieved successfully.",
-        "metadata": {
-            "timestamp": now_iso,
-            "request_id": f"req-{uuid.uuid4().hex[:8]}",
-        },
-    }
-
-
-@router.post("/switch-role")
-async def switch_role(
-    payload: SwitchRoleRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Demo/Evaluator feature: Switch active user context to a demo account of target role.
-    Issues a fresh token for the target role demo account.
-    """
-    target = payload.target_role.strip().upper()
-    if not target.startswith("ROLE_"):
-        target = f"ROLE_{target}"
-
-    # Verify target role exists
-    role_check = await db.execute(select(Role).where(Role.id == target))
-    if not role_check.scalar_one_or_none():
-        raise DomainException(
-            status_code=400,
-            code="INVALID_TARGET_ROLE",
-            message=f"Target role '{target}' is not a recognized system role.",
-        )
-
-    # Find the demo user for this target role
-    stmt = (
-        select(User)
-        .options(
-            selectinload(User.role),
-            selectinload(User.state),
-            selectinload(User.district),
-        )
-        .where(User.role_id == target)
-        .order_by(User.created_at)
-    )
-    result = await db.execute(stmt)
-    target_user = result.scalar_one_or_none()
-
-    if not target_user:
-        raise DomainException(
-            status_code=404,
-            code="DEMO_USER_NOT_FOUND",
-            message=f"No active demo account found for role '{target}'.",
-        )
-
-    # Record role switch in audit log
-    audit_entry = AuditLog(
-        user_id=current_user.id,
-        action="AUTH_ROLE_SWITCH",
-        entity_name="User",
-        entity_id=str(target_user.id),
-        old_values={"previous_role": current_user.role_id, "previous_user": current_user.username},
-        new_values={"switched_to_role": target, "switched_to_user": target_user.username},
-    )
-    db.add(audit_entry)
-    await db.commit()
-
-    new_token = create_access_token(
-        subject=str(target_user.id),
-        extra_claims={
-            "role": target_user.role_id,
-            "username": target_user.username,
-            "email": target_user.email,
-            "state_id": target_user.state_id,
-            "district_id": target_user.district_id,
-        },
-    )
-
-    now_iso = datetime.now(timezone.utc).isoformat()
-    return {
-        "success": True,
-        "data": {
-            "access_token": new_token,
-            "token_type": "bearer",
-            "expires_in_seconds": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            "user": build_user_summary(target_user).model_dump(),
-        },
-        "message": f"Switched role context to {target_user.role.name} ({target_user.full_name}).",
         "metadata": {
             "timestamp": now_iso,
             "request_id": f"req-{uuid.uuid4().hex[:8]}",
@@ -253,14 +222,17 @@ async def logout(
     """
     Log out active user session and record audit event.
     """
-    audit_entry = AuditLog(
-        user_id=current_user.id,
-        action="AUTH_LOGOUT",
-        entity_name="User",
-        entity_id=str(current_user.id),
-    )
-    db.add(audit_entry)
-    await db.commit()
+    try:
+        audit_entry = AuditLog(
+            user_id=current_user.id,
+            action="AUTH_LOGOUT",
+            entity_name="User",
+            entity_id=str(current_user.id),
+        )
+        db.add(audit_entry)
+        await db.commit()
+    except Exception:
+        pass
 
     now_iso = datetime.now(timezone.utc).isoformat()
     return {
@@ -272,3 +244,4 @@ async def logout(
             "request_id": f"req-{uuid.uuid4().hex[:8]}",
         },
     }
+

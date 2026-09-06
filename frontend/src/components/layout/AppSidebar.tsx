@@ -64,6 +64,7 @@ const NAVIGATION_ITEMS: NavItem[] = [
       RoleCode.DISTRICT_OFFICER,
       RoleCode.FIELD_OFFICER,
       RoleCode.ADMIN,
+      RoleCode.SUPER_ADMIN,
     ],
   },
   {
@@ -98,6 +99,7 @@ const NAVIGATION_ITEMS: NavItem[] = [
       RoleCode.STATE_OFFICER,
       RoleCode.DISTRICT_OFFICER,
       RoleCode.ADMIN,
+      RoleCode.SUPER_ADMIN,
     ],
   },
   {
@@ -111,6 +113,7 @@ const NAVIGATION_ITEMS: NavItem[] = [
       RoleCode.STATE_OFFICER,
       RoleCode.DISTRICT_OFFICER,
       RoleCode.ADMIN,
+      RoleCode.SUPER_ADMIN,
     ],
   },
   {
@@ -126,6 +129,14 @@ const NAVIGATION_ITEMS: NavItem[] = [
     href: "/r-and-r",
     icon: Home,
     isReady: true,
+    allowedRoles: [
+      RoleCode.CENTRAL_OFFICER,
+      RoleCode.STATE_OFFICER,
+      RoleCode.DISTRICT_OFFICER,
+      RoleCode.SOCIAL_OFFICER,
+      RoleCode.ADMIN,
+      RoleCode.SUPER_ADMIN,
+    ],
   },
   {
     id: "affected-families",
@@ -133,6 +144,14 @@ const NAVIGATION_ITEMS: NavItem[] = [
     href: "/affected-families",
     icon: Users,
     isReady: true,
+    allowedRoles: [
+      RoleCode.CENTRAL_OFFICER,
+      RoleCode.STATE_OFFICER,
+      RoleCode.DISTRICT_OFFICER,
+      RoleCode.SOCIAL_OFFICER,
+      RoleCode.ADMIN,
+      RoleCode.SUPER_ADMIN,
+    ],
   },
   {
     id: "field",
@@ -144,8 +163,10 @@ const NAVIGATION_ITEMS: NavItem[] = [
       RoleCode.FIELD_OFFICER,
       RoleCode.DISTRICT_OFFICER,
       RoleCode.ADMIN,
+      RoleCode.SUPER_ADMIN,
     ],
   },
+
   {
     id: "documents",
     label: "Document Vault",

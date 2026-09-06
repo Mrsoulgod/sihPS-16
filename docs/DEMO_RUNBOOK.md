@@ -83,22 +83,39 @@ npm start
 
 ---
 
-## 4. Demo Role Credentials Matrix
+## 4. Canonical Demo Accounts & Role Hierarchy
 
-The system includes pre-seeded institutional accounts representing each tier of governance under the RFCTLARR Act 2013:
+NLAMS does not use fake frontend role switching dropdowns. In accordance with statutory governance protocols, role and jurisdiction are inherent to authenticated user identity:
 
-| Role Title | Role Code | Username | Email | Password | Primary Jurisdiction |
+`USER ID + PASSWORD + AUTHENTICATED SESSION + ROLE + JURISDICTION = AUTHORIZED NLAMS EXPERIENCE`
+
+| Operational Role | Canonical Role Code | Username | Password | Jurisdiction Level | Scope & Authorized Actions |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Central Admin** | `SUPER_ADMIN` | `central_admin` | `central_officer@nlams.gov.in` | `Password@123` | National (All 4 States) |
-| **State Officer** | `STATE_OFFICER` | `state_rj_officer` | `state_officer@nlams.gov.in` | `Password@123` | Rajasthan State Revenue Dept |
-| **District Collector / CALA** | `DISTRICT_OFFICER` | `cala_jaipur` | `cala_jaipur@nlams.gov.in` | `Password@123` | Jaipur District (CALA NH-48) |
-| **Acquiring Agency Officer** | `PROJECT_AGENCY` | `nhai_pd_jaipur` | `nhai_agency@nlams.gov.in` | `Password@123` | NHAI Project Implementation Unit |
-| **Field Verification Officer** | `FIELD_OFFICER` | `patwari_kotputli` | `patwari_kotputli@nlams.gov.in` | `Password@123` | Kotputli Tehsil / Field Survey |
-| **Social / R&R Officer** | `SOCIAL_OFFICER` | `randr_jaipur` | `randr_officer@nlams.gov.in` | `Password@123` | Jaipur Rural Resettlement |
+| **Central Ministry Officer** | `ROLE_CENTRAL_OFFICER` | `central_admin` | `Password@123` | `CENTRAL` (National) | National pipeline oversight, central sanctions, all states/districts |
+| **State Revenue Officer** | `ROLE_STATE_OFFICER` | `state_rj_officer` | `Password@123` | `STATE` (Rajasthan) | State-wide gazette oversight, Section 19 reviews, Rajasthan districts |
+| **District Collector / CALA** | `ROLE_DISTRICT_OFFICER` | `cala_jaipur` | `Password@123` | `DISTRICT` (Jaipur) | Section 15 hearings, Section 23 awards, PFMS DBT authorizations |
+| **Project Implementing Agency** | `ROLE_PROJECT_AGENCY` | `nhai_pd_jaipur` | `Password@123` | `PROJECT` (NHAI NH-48) | Alignment DPR proposals, compensation escrow deposits, possession requests |
+| **Field Survey Officer (Patwari)**| `ROLE_FIELD_OFFICER` | `patwari_kotputli` | `Password@123` | `FIELD` (Tehsil Kotputli) | Ground truthing, asset valuation, KYC surveys, GeoJSON verification |
+| **Social Development & R&R Officer**| `ROLE_SOCIAL_OFFICER` | `randr_jaipur` | `Password@123` | `SOCIAL` (Jaipur District) | R&R schemes, PAF family census, entitlement matrix, land allotments |
+| **System Administrator** | `ROLE_ADMIN` / `ROLE_SUPER_ADMIN` | `admin` | `Password@123` | `CENTRAL` (Platform) | Apex system configuration, security audit trail, user governance |
 
 ---
 
-## 5. Rapid Verification & Health Smoke Test
+## 5. Role Transition & Demonstration Procedure
+
+To demonstrate another statutory role during an evaluation or pitch:
+
+1. **Logout**: Click the clearly labeled **Logout** button in the top right institutional header.
+2. **Return to Sign-In**: The client-side session, JWT credentials, and cached profile are invalidated and cleared, redirecting to `/login`.
+3. **Select Target Officer**: Click the target officer's quick-sign-in persona card (or type their username and password `Password@123`).
+4. **Authenticate**: Click **Authenticate & Enter Platform**.
+5. **Authorized Session Received**: The FastAPI backend validates credentials, mints a signed JWT with server-verified role and jurisdiction claims, and logs an immutable `AUTH_LOGIN_SUCCESS` audit event.
+6. **Scoped Experience**: The frontend loads the dashboard, navigation sidebar, and action permissions genuinely scoped to that officer's tier.
+
+---
+
+## 6. Rapid Verification & Health Smoke Test
+
 
 Run these verification commands in PowerShell to ensure 100% demo readiness:
 

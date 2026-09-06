@@ -143,45 +143,55 @@ async def test_get_me_invalid_token():
         assert response.status_code == 401
         body = response.json()
         assert body["success"] is False
-        assert body["error"]["code"] == "INVALID_OR_EXPIRED_TOKEN"
+        assert body["error"]["code"] == "INVALID_TOKEN"
 
 
 @pytest.mark.asyncio
-async def test_switch_role():
-    """Verify evaluator role switcher endpoint switches context to target role."""
+async def test_reauthentication_flow():
+    """Verify legitimate role transition via explicit logout and login with target role credentials."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Start as CENTRAL_OFFICER
         login_res = await client.post(
             "/api/v1/auth/login",
             json={
-                "username_or_email": "central@gov.demo",
+                "username_or_email": "central_admin",
                 "password": settings.DEMO_USER_PASSWORD,
             },
         )
         assert login_res.status_code == 200
         token = login_res.json()["data"]["access_token"]
+        assert login_res.json()["data"]["user"]["role_id"] == "ROLE_CENTRAL_OFFICER"
 
-        # Switch to FIELD_OFFICER
-        switch_res = await client.post(
-            "/api/v1/auth/switch-role",
+        # Explicit Logout
+        logout_res = await client.post(
+            "/api/v1/auth/logout",
             headers={"Authorization": f"Bearer {token}"},
-            json={"target_role": "ROLE_FIELD_OFFICER"},
         )
-        assert switch_res.status_code == 200
-        body = switch_res.json()
-        assert body["success"] is True
-        assert body["data"]["user"]["role_id"] == "ROLE_FIELD_OFFICER"
-        assert body["data"]["user"]["username"] == "field_officer"
+        assert logout_res.status_code == 200
+
+        # Login as FIELD_OFFICER
+        login_field_res = await client.post(
+            "/api/v1/auth/login",
+            json={
+                "username_or_email": "patwari_kotputli",
+                "password": settings.DEMO_USER_PASSWORD,
+            },
+        )
+        assert login_field_res.status_code == 200
+        field_body = login_field_res.json()
+        assert field_body["data"]["user"]["role_id"] == "ROLE_FIELD_OFFICER"
+        assert field_body["data"]["user"]["username"] == "patwari_kotputli"
 
         # Check new token works on /auth/me
-        new_token = body["data"]["access_token"]
+        new_token = field_body["data"]["access_token"]
         me_res = await client.get(
             "/api/v1/auth/me",
             headers={"Authorization": f"Bearer {new_token}"},
         )
         assert me_res.status_code == 200
         assert me_res.json()["data"]["role_id"] == "ROLE_FIELD_OFFICER"
+
 
 
 @pytest.mark.asyncio

@@ -154,14 +154,15 @@ async def test_jurisdiction_scoping_rules():
 
 
 @pytest.mark.asyncio
-async def test_all_six_demo_accounts():
-    """Verify all 6 demo accounts can authenticate and return expected roles."""
+async def test_all_canonical_demo_accounts():
+    """Verify all canonical demo accounts can authenticate and return expected roles."""
     expected_accounts = [
         ("central@gov.demo", "ROLE_CENTRAL_OFFICER"),
         ("state@gov.demo", "ROLE_STATE_OFFICER"),
         ("district@gov.demo", "ROLE_DISTRICT_OFFICER"),
         ("agency@gov.demo", "ROLE_PROJECT_AGENCY"),
         ("field@gov.demo", "ROLE_FIELD_OFFICER"),
+        ("randr@gov.demo", "ROLE_SOCIAL_OFFICER"),
         ("admin@gov.demo", "ROLE_ADMIN"),
     ]
     transport = ASGITransport(app=app)
@@ -174,3 +175,4 @@ async def test_all_six_demo_accounts():
             assert res.status_code == 200, f"Failed for {email}: {res.text}"
             body = res.json()
             assert body["data"]["user"]["role_id"] == expected_role
+

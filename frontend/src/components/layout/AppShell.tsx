@@ -42,6 +42,13 @@ export function AppShell({ children }: AppShellProps) {
     pathname.startsWith("/transparency") ||
     pathname.startsWith("/overview");
 
+  // Redirect to login if user attempts to access protected operations unauthenticated
+  useEffect(() => {
+    if (!isPublicRoute && !isLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isPublicRoute, isLoading, isAuthenticated, router]);
+
   // 1. Dedicated standalone layout for Login page
   if (pathname === "/login") {
     return <>{children}</>;
@@ -58,7 +65,22 @@ export function AppShell({ children }: AppShellProps) {
     );
   }
 
-  // 3. Authenticated Government Operations Platform (AppHeader + AppSidebar)
+  // 3. Loading state for protected routes while session is being verified
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#138808]" />
+        <p className="mt-3 text-xs font-semibold text-slate-600">Verifying statutory authorization...</p>
+      </div>
+    );
+  }
+
+  // 4. If not authenticated on protected route, return null while router pushes to /login
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // 5. Authenticated Government Operations Platform (AppHeader + AppSidebar)
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col antialiased">
       {/* Permanent Command Header */}
@@ -83,3 +105,4 @@ export function AppShell({ children }: AppShellProps) {
     </div>
   );
 }
+

@@ -612,8 +612,8 @@ class WorkflowEngine:
         if project_id:
             stmt = stmt.where(WorkflowTask.project_id == project_id)
 
-        # Scoping: ADMIN and CENTRAL_OFFICER have national visibility across all tasks
-        if user_role not in (RoleCode.ADMIN.value, RoleCode.CENTRAL_OFFICER.value):
+        # Scoping: if not ADMIN, show tasks assigned to user's role
+        if user_role != RoleCode.ADMIN.value:
             stmt = stmt.where(
                 or_(
                     WorkflowTask.assigned_role == user_role,

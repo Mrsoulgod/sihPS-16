@@ -25,6 +25,8 @@ async def seed_roles(session: AsyncSession) -> None:
         {"id": RoleCode.DISTRICT_OFFICER.value, "name": "District CALA / Collector", "description": "Competent Authority for Land Acquisition, objection hearings, Section 23 awards, and DBT approvals."},
         {"id": RoleCode.PROJECT_AGENCY.value, "name": "Project Implementing Agency", "description": "DPR upload, alignment submission, compensation deposits, and taking physical possession."},
         {"id": RoleCode.FIELD_OFFICER.value, "name": "Field Officer / Surveyor", "description": "Ground truthing, asset valuation (trees/structures), and KYC verification."},
+        {"id": RoleCode.SOCIAL_OFFICER.value, "name": "Social Development & R&R Officer", "description": "Rehabilitation schemes, family census, entitlement matrix, and allotment validation."},
+        {"id": RoleCode.SUPER_ADMIN.value, "name": "Super Administrator", "description": "Apex system administration, security, and global auditing."},
         {"id": RoleCode.ADMIN.value, "name": "System Administrator", "description": "System configuration, user provisioning, security, and audit management."},
     ]
 
@@ -89,22 +91,22 @@ async def seed_locations(session: AsyncSession) -> None:
 
 
 async def seed_demo_users(session: AsyncSession) -> None:
-    """Seed safe, fictional demonstration accounts for each role."""
+    """Seed safe, fictional demonstration accounts for each canonical role."""
     hashed_pwd = get_password_hash(settings.DEMO_USER_PASSWORD)
 
     demo_users = [
         {
-            "username": "central_officer",
+            "username": "central_admin",
             "email": "central@gov.demo",
             "full_name": "Shri Rajesh Kumar",
             "designation": "Joint Secretary (Land Acquisition)",
-            "organization": "Ministry of Road Transport & Highways",
+            "organization": "Ministry of Road Transport & Highways (MoRTH)",
             "role_id": RoleCode.CENTRAL_OFFICER.value,
             "state_id": None,
             "district_id": None,
         },
         {
-            "username": "state_officer",
+            "username": "state_rj_officer",
             "email": "state@gov.demo",
             "full_name": "Smt. Sunita Verma, IAS",
             "designation": "Principal Secretary (Revenue)",
@@ -124,22 +126,32 @@ async def seed_demo_users(session: AsyncSession) -> None:
             "district_id": "DST-JAI",
         },
         {
-            "username": "agency_officer",
+            "username": "nhai_pd_jaipur",
             "email": "agency@gov.demo",
             "full_name": "Er. Vikram Singh",
-            "designation": "Chief General Manager (Technical)",
+            "designation": "Project Director (NHAI Jaipur)",
             "organization": "National Highways Authority of India (NHAI)",
             "role_id": RoleCode.PROJECT_AGENCY.value,
-            "state_id": None,
-            "district_id": None,
+            "state_id": "IN-RJ",
+            "district_id": "DST-JAI",
         },
         {
-            "username": "field_officer",
+            "username": "patwari_kotputli",
             "email": "field@gov.demo",
             "full_name": "Shri Ramesh Choudhary",
-            "designation": "Senior Revenue Inspector & Field Surveyor",
+            "designation": "Senior Revenue Inspector & Field Surveyor (Patwari)",
             "organization": "Tehsil Kotputli Revenue Office",
             "role_id": RoleCode.FIELD_OFFICER.value,
+            "state_id": "IN-RJ",
+            "district_id": "DST-JAI",
+        },
+        {
+            "username": "randr_jaipur",
+            "email": "randr@gov.demo",
+            "full_name": "Smt. Meenakshi Sundaram",
+            "designation": "Social Development & R&R Officer",
+            "organization": "Directorate of Resettlement & Rehabilitation, Jaipur",
+            "role_id": RoleCode.SOCIAL_OFFICER.value,
             "state_id": "IN-RJ",
             "district_id": "DST-JAI",
         },
@@ -167,6 +179,7 @@ async def seed_demo_users(session: AsyncSession) -> None:
             session.add(user)
     await session.flush()
     logger.info("Demo users seeded successfully.")
+
 
 
 async def seed_projects(session: AsyncSession) -> None:

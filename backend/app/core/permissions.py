@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from typing import List, Optional, Callable, Any
 from fastapi import Depends, Header
@@ -17,72 +18,38 @@ async def get_current_user(
 ) -> User:
     """
     Dependency extracting and validating the JWT bearer token or demo token from Authorization header.
-    Loads the user with associated role, state, and district, with seamless fallback for demo exploration.
+    Strictly validates session identity against server state. Unauthenticated or invalid requests receive 401.
     """
-    user = None
-    
-    if authorization:
-        parts = authorization.split(" ")
-        token = parts[1] if len(parts) == 2 else authorization
-        
-        # 1. Check if demo token pattern
-        if token.startswith("demo_token_"):
-            identifier = token.replace("demo_token_", "").strip()
-            from app.core.demo_users import get_demo_user, get_demo_user_by_uuid
-            try:
-                user = get_demo_user_by_uuid(uuid.UUID(identifier))
-            except Exception:
-                user = get_demo_user(identifier)
-                
-            if not user:
-                try:
-                    stmt = (
-                        select(User)
-                        .options(
-                            selectinload(User.role),
-                            selectinload(User.state),
-                            selectinload(User.district),
-                        )
-                        .where(or_(User.username == identifier, User.email == identifier))
-                    )
-                    res = await db.execute(stmt)
-                    user = res.scalar_one_or_none()
-                except Exception:
-                    pass
-        else:
-            # 2. Try decoding as JWT access token
-            payload = decode_access_token(token)
-            if payload:
-                user_id_str = payload.get("sub")
-                if user_id_str:
-                    try:
-                        user_uuid = uuid.UUID(user_id_str)
-                        stmt = (
-                            select(User)
-                            .options(
-                                selectinload(User.role),
-                                selectinload(User.state),
-                                selectinload(User.district),
-                            )
-                            .where(User.id == user_uuid)
-                        )
-                        result = await db.execute(stmt)
-                        user = result.scalar_one_or_none()
-                    except Exception:
-                        pass
-                    
-                    if not user:
-                        from app.core.demo_users import get_demo_user_by_uuid
-                        try:
-                            user = get_demo_user_by_uuid(uuid.UUID(user_id_str))
-                        except Exception:
-                            pass
+    if not authorization or not authorization.strip():
+        raise DomainException(
+            status_code=401,
+            code="UNAUTHORIZED",
+            message="Authentication credentials were not provided.",
+        )
 
-    # 3. Graceful Demo Fallback (for demo judges / unauthenticated exploration)
-    if not user:
-        from app.core.demo_users import get_demo_user
-        user = get_demo_user("cala_jaipur")
-        
+    parts = authorization.strip().split(" ")
+    token = parts[1] if len(parts) == 2 else parts[0]
+
+    if not token:
+        raise DomainException(
+            status_code=401,
+            code="UNAUTHORIZED",
+            message="Empty or invalid authorization header.",
+        )
+
+    user: Optional[User] = None
+
+    # 1. Check if demo token pattern (e.g. demo_token_<identifier>)
+    if token.startswith("demo_token_"):
+        identifier = token.replace("demo_token_", "").strip()
+        # In case token has timestamp attached, e.g. demo_token_00000000-0000-..._17123456
+        uuid_part = identifier.split("_")[0] if "_" in identifier else identifier
+        from app.core.demo_users import get_demo_user, get_demo_user_by_uuid
+        try:
+            user = get_demo_user_by_uuid(uuid.UUID(uuid_part))
+        except Exception:
+            user = get_demo_user(identifier)
+
         if not user:
             try:
                 stmt = (
@@ -92,18 +59,66 @@ async def get_current_user(
                         selectinload(User.state),
                         selectinload(User.district),
                     )
-                    .limit(1)
+                    .where(or_(User.username == identifier, User.email == identifier))
                 )
-                res = await db.execute(stmt)
+                res = await asyncio.wait_for(db.execute(stmt), timeout=2.0)
                 user = res.scalar_one_or_none()
             except Exception:
                 pass
+    else:
+        # 2. Decode JWT access token
+        payload = decode_access_token(token)
+        if not payload:
+            raise DomainException(
+                status_code=401,
+                code="INVALID_TOKEN",
+                message="Access token is invalid or has expired.",
+            )
+
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise DomainException(
+                status_code=401,
+                code="INVALID_TOKEN",
+                message="Token payload missing subject identifier.",
+            )
+
+        try:
+            user_uuid = uuid.UUID(user_id_str)
+            stmt = (
+                select(User)
+                .options(
+                    selectinload(User.role),
+                    selectinload(User.state),
+                    selectinload(User.district),
+                )
+                .where(User.id == user_uuid)
+            )
+            result = await asyncio.wait_for(db.execute(stmt), timeout=2.0)
+            user = result.scalar_one_or_none()
+        except Exception:
+            user = None
+
+
+        if not user:
+            from app.core.demo_users import get_demo_user_by_uuid, get_demo_user
+            try:
+                user = get_demo_user_by_uuid(uuid.UUID(user_id_str))
+            except Exception:
+                user = get_demo_user(user_id_str)
 
     if not user:
         raise DomainException(
             status_code=401,
             code="UNAUTHORIZED",
-            message="Unable to authenticate session. Please login or select a demo role.",
+            message="Authenticated user record could not be found.",
+        )
+
+    if not user.is_active:
+        raise DomainException(
+            status_code=403,
+            code="ACCOUNT_DEACTIVATED",
+            message="Your account has been deactivated. Contact your administrator.",
         )
 
     return user
@@ -125,13 +140,18 @@ async def get_optional_user(
         return None
 
 
-
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
     """
     Ensures user is authenticated and active.
     """
+    if not current_user.is_active:
+        raise DomainException(
+            status_code=403,
+            code="ACCOUNT_DEACTIVATED",
+            message="User account is deactivated.",
+        )
     return current_user
 
 
@@ -140,7 +160,6 @@ def require_roles(*allowed_roles: Any) -> Callable:
     Declarative RBAC dependency factory.
     Enforces that the current authenticated user has one of the specified allowed roles.
     Matches against both role.id (e.g. 'ROLE_CENTRAL_OFFICER') and role enum name ('CENTRAL_OFFICER').
-    Supports both varargs e.g. require_roles('ADMIN', 'DISTRICT_OFFICER') and list e.g. require_roles([a, b]).
     """
     flat_roles: List[str] = []
     for r in allowed_roles:
@@ -151,7 +170,6 @@ def require_roles(*allowed_roles: Any) -> Callable:
 
     async def role_checker(current_user: User = Depends(get_current_user)) -> User:
         user_role_id = current_user.role_id
-        # Allow matching by either ROLE_ADMIN or ADMIN, etc.
         matched = False
         for r in flat_roles:
             if user_role_id == r:
@@ -161,6 +179,10 @@ def require_roles(*allowed_roles: Any) -> Callable:
                 matched = True
                 break
             if current_user.role and current_user.role.name == r:
+                matched = True
+                break
+            # SUPER_ADMIN inherits ADMIN permissions
+            if user_role_id in ("ROLE_SUPER_ADMIN", "ROLE_ADMIN") and r in ("ADMIN", "ROLE_ADMIN", "SUPER_ADMIN", "ROLE_SUPER_ADMIN"):
                 matched = True
                 break
 
@@ -183,16 +205,42 @@ def require_roles(*allowed_roles: Any) -> Callable:
 
 def check_jurisdiction(user: User, state_id: Optional[str] = None, district_id: Optional[str] = None) -> bool:
     """
-    Verify if a user has authority over a specific state or district.
-    - ADMIN and CENTRAL_OFFICER have national jurisdiction.
-    - STATE_OFFICER has jurisdiction over their state.
-    - DISTRICT_OFFICER and FIELD_OFFICER have jurisdiction over their district.
-    - PROJECT_AGENCY has project-level scope.
+    Verify if a user has authority over a specific state or district according to canonical NLAMS hierarchy:
+    - CENTRAL_OFFICER / SUPER_ADMIN / ADMIN: National jurisdiction (all states/districts).
+    - STATE_OFFICER: Authority across all districts in user's state_id.
+    - DISTRICT_OFFICER: Authority across all tehsils/parcels in user's district_id.
+    - SOCIAL_OFFICER: Authority over R&R schemes within their assigned district.
+    - FIELD_OFFICER: Authority over assigned district/tehsils.
+    - PROJECT_AGENCY: Authority over assigned project boundaries.
     """
-    if user.role_id in ("ROLE_ADMIN", "ROLE_CENTRAL_OFFICER"):
+    if user.role_id in ("ROLE_ADMIN", "ROLE_SUPER_ADMIN", "ROLE_CENTRAL_OFFICER"):
         return True
     if user.role_id == "ROLE_STATE_OFFICER":
         return state_id is None or user.state_id == state_id
-    if user.role_id in ("ROLE_DISTRICT_OFFICER", "ROLE_FIELD_OFFICER"):
+    if user.role_id in ("ROLE_DISTRICT_OFFICER", "ROLE_FIELD_OFFICER", "ROLE_SOCIAL_OFFICER"):
+        if state_id and user.state_id and user.state_id != state_id:
+            return False
         return district_id is None or user.district_id == district_id
     return True
+
+
+def enforce_jurisdiction(user: User, state_id: Optional[str] = None, district_id: Optional[str] = None) -> None:
+    """
+    Asserts jurisdiction authority and raises 403 OUTSIDE_JURISDICTION if violated.
+    """
+    if not check_jurisdiction(user, state_id=state_id, district_id=district_id):
+        raise DomainException(
+            status_code=403,
+            code="OUTSIDE_JURISDICTION",
+            message="Access denied: Resource is outside your authorized administrative jurisdiction.",
+            details=[
+                {
+                    "user_role": user.role_id,
+                    "user_state": user.state_id,
+                    "user_district": user.district_id,
+                    "target_state": state_id,
+                    "target_district": district_id,
+                }
+            ],
+        )
+

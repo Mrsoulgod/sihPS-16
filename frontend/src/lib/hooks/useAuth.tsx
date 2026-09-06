@@ -6,14 +6,10 @@ import {
   fetchCurrentUser,
   loginUser,
   logoutUser,
-  switchUserRole,
   getStoredToken,
   getStoredUser,
-  setStoredToken,
-  setStoredUser,
   removeStoredToken,
   removeStoredUser,
-  FRONTEND_DEMO_USERS,
 } from "../api/auth";
 import { ApiClientError } from "../api/client";
 
@@ -24,7 +20,6 @@ interface AuthContextType {
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
-  switchRole: (targetRole: string) => Promise<void>;
   clearError: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -34,11 +29,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserSummary | null>(() => {
     if (typeof window !== "undefined") {
-      return getStoredUser() || FRONTEND_DEMO_USERS.cala_jaipur;
+      const token = getStoredToken();
+      if (token) {
+        return getStoredUser();
+      }
     }
-    return FRONTEND_DEMO_USERS.cala_jaipur;
+    return null;
   });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
@@ -46,18 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedUser = getStoredUser();
 
     if (!token) {
-      // Default to CALA Demo session if no token is saved
-      const defaultUser = FRONTEND_DEMO_USERS.cala_jaipur;
-      setUser(defaultUser);
-      setStoredUser(defaultUser);
-      setStoredToken(`demo_token_${defaultUser.id}`);
+      setUser(null);
       setIsLoading(false);
       return;
     }
 
     if (storedUser) {
       setUser(storedUser);
-      setIsLoading(false);
     }
 
     try {
@@ -67,11 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setError(null);
     } catch (err: any) {
-      console.warn("Session verification note:", err);
-      // Keep cached or fallback demo user so UI never breaks
-      if (!storedUser) {
-        setUser(FRONTEND_DEMO_USERS.cala_jaipur);
-      }
+      console.warn("Session validation failed, resetting unauthenticated state:", err);
+      removeStoredToken();
+      removeStoredUser();
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -86,12 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
       const res = await loginUser(credentials);
-      setUser(res.data.user);
+      if (res.data?.user) {
+        setUser(res.data.user);
+      }
     } catch (err: any) {
       if (err instanceof ApiClientError) {
         setError(err.message);
       } else {
-        setError("Unable to authenticate. Please check your credentials.");
+        setError(err.message || "Unable to authenticate. Please check your credentials.");
       }
       throw err;
     } finally {
@@ -103,28 +97,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       await logoutUser();
+    } catch (err) {
+      console.warn("Logout error:", err);
     } finally {
+      removeStoredToken();
+      removeStoredUser();
       setUser(null);
       setError(null);
       setIsLoading(false);
-    }
-  };
-
-  const switchRole = async (targetRole: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const res = await switchUserRole(targetRole);
-      setUser(res.data.user);
-    } catch (err: any) {
-      if (err instanceof ApiClientError) {
-        setError(err.message);
-      } else {
-        setError("Failed to switch role context.");
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
       }
-      throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -139,7 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         login,
         logout,
-        switchRole,
         clearError,
         refreshUser,
       }}
@@ -156,3 +138,4 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
+
