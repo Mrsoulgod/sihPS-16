@@ -18,6 +18,7 @@ import {
   ReportTypeInfo,
   ReportPreviewResponse,
 } from "../types/analytics";
+import { DashboardSummaryData } from "../types/dashboard";
 import { UserSummary, LoginResponseData } from "../types/auth";
 
 // -------------------------------------------------------------
@@ -1221,6 +1222,317 @@ export function handleMockApiRequest<T>(
       data: null as unknown as T,
       message: "Logged out successfully.",
       metadata: { timestamp: new Date().toISOString(), request_id: `mock-auth-logout-${Date.now()}` },
+    };
+  }
+
+  // 0.5 DASHBOARD ENDPOINTS
+  if (clean.startsWith("/dashboard")) {
+    let currentUser: UserSummary | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("nlams_user_profile");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.role_id) {
+            currentUser = parsed;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    const roleId = currentUser?.role_id || "ROLE_CENTRAL_OFFICER";
+    const isDistrict = roleId === "ROLE_DISTRICT_OFFICER";
+    const isState = roleId === "ROLE_STATE_OFFICER";
+    const isAgency = roleId === "ROLE_PROJECT_AGENCY";
+    const isField = roleId === "ROLE_FIELD_OFFICER";
+    const isSocial = roleId === "ROLE_SOCIAL_OFFICER";
+
+    const dashboardData: DashboardSummaryData = {
+      scope_level: isDistrict ? "DISTRICT" : isState ? "STATE" : isAgency ? "AGENCY" : isField ? "FIELD" : isSocial ? "SOCIAL" : "NATIONAL",
+      jurisdiction_name: isDistrict
+        ? `${currentUser?.district_name || "Jaipur"} District (CALA Command)`
+        : isState
+        ? `${currentUser?.state_name || "Rajasthan"} (State Secretariat)`
+        : isAgency
+        ? `${currentUser?.organization || "NHAI"} (Project Agency Command)`
+        : isField
+        ? "Kotputli Tehsil (Field Operations)"
+        : isSocial
+        ? "Jaipur District (Social R&R Welfare)"
+        : "All India (National Command View)",
+      state_id: isDistrict || isField || isSocial || isAgency ? "IN-RJ" : isState ? "IN-RJ" : undefined,
+      state_name: isDistrict || isField || isSocial || isAgency ? "Rajasthan" : isState ? "Rajasthan" : undefined,
+      district_id: isDistrict || isField || isSocial ? "DST-JAI" : undefined,
+      district_name: isDistrict || isField || isSocial ? "Jaipur" : undefined,
+      kpis: {
+        total_projects: isDistrict ? 4 : isState ? 6 : isAgency ? 2 : 12,
+        total_land_proposed_acres: isDistrict ? 185.0 : 428.4,
+        total_land_acquired_acres: isDistrict ? 132.5 : 286.2,
+        total_possession_acres: isDistrict ? 115.4 : 210.5,
+        overall_acquisition_percent: 66.8,
+        compensation_assessed_cr: isDistrict ? 72.5 : 142.5,
+        compensation_disbursed_cr: isDistrict ? 54.2 : 98.4,
+        overall_disbursement_percent: 69.1,
+        affected_families: isDistrict ? 142 : 1240,
+        displaced_families: isDistrict ? 38 : 310,
+        total_paf_count: isDistrict ? 142 : 1240,
+        total_pdf_count: isDistrict ? 38 : 310,
+        avg_randr_completion_percent: 74.2,
+        eligible_families: isDistrict ? 142 : 1240,
+        families_assisted: isDistrict ? 98 : 980,
+        families_completed: isDistrict ? 89 : 890,
+        pending_rr_cases: isDistrict ? 26 : 260,
+        parcels_pending_verification: 8,
+        objections_pending: 3,
+        compensation_pending_cases: 5,
+        awards_pending: 2,
+        disbursement_pending_cases: 4,
+        possession_pending_cases: 2,
+        randr_pending_cases: 6,
+        high_critical_risk_projects: 1,
+      },
+      acquisition_overview: {
+        land_proposed_acres: 428.4,
+        land_acquired_acres: 286.2,
+        land_remaining_acres: 142.2,
+        acquisition_percent: 66.8,
+        possession_acres: 210.5,
+        possession_percent: 49.1,
+      },
+      randr_overview: {
+        total_affected_families: 1240,
+        eligible_families: 1240,
+        families_approved: 1120,
+        families_assisted: 980,
+        families_completed: 890,
+        pending_cases: 260,
+        completion_percent: 74.2,
+        progress_stages: [
+          { stage: "Survey Completed", count: 1240, percentage: 100 },
+          { stage: "Entitlements Approved", count: 1120, percentage: 90.3 },
+          { stage: "Housing/Grant Disbursed", count: 980, percentage: 79 },
+          { stage: "Fully Resettled", count: 890, percentage: 71.8 },
+        ],
+      },
+      status_breakdown: {
+        on_track: 8,
+        at_risk: 3,
+        delayed: 1,
+        completed: 0,
+        total: 12,
+      },
+      state_progress: [
+        {
+          state_id: "IN-RJ",
+          state_name: "Rajasthan",
+          project_count: 5,
+          land_proposed_acres: 185,
+          land_acquired_acres: 132.5,
+          acquisition_percent: 71.6,
+          compensation_disbursed_cr: 54.2,
+          randr_completion_percent: 78,
+          performance_category: "STRONG",
+        },
+        {
+          state_id: "IN-MH",
+          state_name: "Maharashtra",
+          project_count: 4,
+          land_proposed_acres: 142.4,
+          land_acquired_acres: 98.7,
+          acquisition_percent: 69.3,
+          compensation_disbursed_cr: 31.8,
+          randr_completion_percent: 72.5,
+          performance_category: "STRONG",
+        },
+        {
+          state_id: "IN-UP",
+          state_name: "Uttar Pradesh",
+          project_count: 3,
+          land_proposed_acres: 101,
+          land_acquired_acres: 55,
+          acquisition_percent: 54.5,
+          compensation_disbursed_cr: 12.4,
+          randr_completion_percent: 65,
+          performance_category: "MODERATE",
+        },
+      ],
+      attention_projects: [
+        {
+          id: "PRJ-NH48-PKG4",
+          project_code: "PRJ-NH48-PKG4",
+          title: "NH-48 6-Laning & Jaipur Western Ring Road Connector",
+          state_name: "Rajasthan",
+          district_name: "Jaipur",
+          current_stage: "SECTION_11",
+          acquisition_progress_percent: 71.6,
+          status: "AT_RISK",
+          reason: "Statutory deadline for Section 11 preliminary notification approaches in 14 days.",
+          risk_score: 32,
+        },
+      ],
+      recent_activity: [
+        {
+          id: 1,
+          action: "Section 11 Preliminary Survey Endorsed",
+          entity_name: "Kotputli Bypass",
+          entity_id: "ACT-RJ-CALA-001",
+          actor_name: "Dr. Amit Sharma, IAS",
+          actor_role: "District CALA",
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      quick_actions: [
+        {
+          id: "qa-1",
+          label: "National Project Pipeline",
+          description: "Monitor all interstate corridor acquisitions",
+          target_route: "/projects",
+          badge: "6 Corridors",
+          icon: "Building2",
+        },
+        {
+          id: "qa-2",
+          label: "Statutory Action Center",
+          description: "Review pending Section 11 & Section 19 tasks",
+          target_route: "/action-centre",
+          badge: "3 Actions",
+          icon: "FileCheck",
+        },
+        {
+          id: "qa-3",
+          label: "PFMS Direct Benefit Transfer",
+          description: "Process digital escrow payment batches",
+          target_route: "/disbursements",
+          badge: "₹18.4 Cr Ready",
+          icon: "IndianRupee",
+        },
+      ],
+      funnel: [
+        { stage_order: 1, stage_id: "SEC_3A", stage_name: "Proposal / Sec 3A", description: "Requisition submitted", project_count: 12, land_acres: 428.4, amount_cr: 142.5, is_bottleneck: false, status: "COMPLETED" },
+        { stage_order: 2, stage_id: "SEC_11", stage_name: "Sec 11 Notification", description: "Preliminary gazette", project_count: 10, land_acres: 375.0, amount_cr: 120.0, is_bottleneck: false, status: "IN_PROGRESS" },
+        { stage_order: 3, stage_id: "SEC_19", stage_name: "Sec 19 Declaration", description: "Final declaration", project_count: 8, land_acres: 320.0, amount_cr: 98.4, is_bottleneck: false, status: "IN_PROGRESS" },
+        { stage_order: 4, stage_id: "SEC_23", stage_name: "Sec 23 Award", description: "Collector award enquiry", project_count: 6, land_acres: 286.2, amount_cr: 86.4, is_bottleneck: false, status: "IN_PROGRESS" },
+        { stage_order: 5, stage_id: "SEC_38", stage_name: "Sec 38 Possession", description: "Physical possession handover", project_count: 4, land_acres: 210.5, amount_cr: 54.2, is_bottleneck: false, status: "IN_PROGRESS" },
+      ],
+      critical_projects: [
+        {
+          id: "PRJ-METRO-PH2",
+          project_code: "PRJ-METRO-PH2",
+          title: "Jaipur Metro Phase-2 Corridor",
+          state_name: "Rajasthan",
+          district_name: "Jaipur",
+          current_stage: "SECTION_15",
+          progress_percent: 44.2,
+          risk_level: "HIGH",
+          risk_score: 68,
+          main_bottleneck: "Section 15 commercial property objections",
+          pending_action: "Convene Special CALA Lok Adalat",
+        },
+      ],
+      central_attention: [
+        {
+          issue_id: "ISSUE-01",
+          priority: "CRITICAL",
+          issue_type: "SECTION_11_SLA",
+          state_name: "Rajasthan",
+          district_name: "Jaipur",
+          project_title: "NH-48 6-Laning",
+          project_id: "PRJ-NH48-PKG4",
+          reason: "Section 11 gazette notification draft pending endorsement for 12 days.",
+          current_authority: "District CALA Jaipur",
+          age_days: 12,
+          status: "OPEN",
+        },
+      ],
+      trends: {
+        acquisition_progression: [
+          { month: "Oct 25", proposed: 45, acquired: 30, possession: 20 },
+          { month: "Nov 25", proposed: 110, acquired: 75, possession: 50 },
+          { month: "Dec 25", proposed: 180, acquired: 120, possession: 85 },
+          { month: "Jan 26", proposed: 230, acquired: 165, possession: 120 },
+          { month: "Feb 26", proposed: 265, acquired: 195, possession: 155 },
+          { month: "Mar 26", proposed: 286.2, acquired: 210.5, possession: 180 },
+        ],
+        disbursement_progression: [
+          { month: "Oct 25", assessed: 30, awarded: 25, disbursed: 18.2 },
+          { month: "Nov 25", assessed: 65, awarded: 55, disbursed: 42.5 },
+          { month: "Dec 25", assessed: 95, awarded: 80, disbursed: 65.0 },
+          { month: "Jan 26", assessed: 115, awarded: 98, disbursed: 78.4 },
+          { month: "Feb 26", assessed: 130, awarded: 112, disbursed: 89.0 },
+          { month: "Mar 26", assessed: 142.5, awarded: 128, disbursed: 98.4 },
+        ],
+        possession_progression: [
+          { month: "Oct 25", target_acres: 45, handed_over: 30 },
+          { month: "Nov 25", target_acres: 110, handed_over: 75 },
+          { month: "Dec 25", target_acres: 180, handed_over: 120 },
+          { month: "Jan 26", target_acres: 230, handed_over: 165 },
+          { month: "Feb 26", target_acres: 265, handed_over: 195 },
+          { month: "Mar 26", target_acres: 286.2, handed_over: 210.5 },
+        ],
+        randr_progression: [
+          { month: "Oct 25", eligible: 120, settled: 90 },
+          { month: "Nov 25", eligible: 280, settled: 210 },
+          { month: "Dec 25", eligible: 450, settled: 340 },
+          { month: "Jan 26", eligible: 680, settled: 510 },
+          { month: "Feb 26", eligible: 810, settled: 620 },
+          { month: "Mar 26", eligible: 1240, settled: 890 },
+        ],
+        stage_distribution: [
+          { stage: "Sec 3A Requisition", projects: 2 },
+          { stage: "Sec 4 SIA Study", projects: 2 },
+          { stage: "Sec 11 Preliminary", projects: 3 },
+          { stage: "Sec 15 Objections", projects: 1 },
+          { stage: "Sec 19 Declaration", projects: 2 },
+          { stage: "Sec 23 Award", projects: 1 },
+          { stage: "Sec 38 Possession", projects: 1 },
+        ],
+      },
+      district_projects: [
+        {
+          project_id: "PRJ-NH48-PKG4",
+          project_code: "PRJ-NH48-PKG4",
+          title: "NH-48 6-Laning & Jaipur Western Ring Road Connector",
+          implementing_agency: "NHAI",
+          current_stage: "SECTION_11",
+          progress_percent: 71.6,
+          land_proposed_acres: 185.0,
+          land_acquired_acres: 132.5,
+          land_pending_acres: 52.5,
+          compensation_assessed_cr: 72.5,
+          compensation_disbursed_cr: 54.2,
+          possession_percent: 62.4,
+          possession_acres: 115.4,
+          randr_completion_percent: 68.5,
+          risk_level: "LOW",
+          pending_action: "Section 11 Endorsement",
+          status: "ON_TRACK",
+        },
+      ],
+      district_my_tasks: [
+        {
+          id: "tsk-01",
+          task_id: "tsk-01",
+          task_title: "Endorse Section 11 Preliminary Boundary Survey",
+          project_id: "PRJ-NH48-PKG4",
+          project_title: "NH-48 6-Laning",
+          project_code: "PRJ-NH48-PKG4",
+          stage: "SECTION_11",
+          stage_name: "Section 11 Notification",
+          priority: "CRITICAL",
+          sla_status: "DUE_TODAY",
+          status: "PENDING",
+          target_route: "/action-centre",
+          created_at: new Date().toISOString(),
+        },
+      ],
+    };
+
+    return {
+      success: true,
+      data: dashboardData as unknown as T,
+      message: "Dashboard summary loaded successfully.",
+      metadata: { timestamp: new Date().toISOString(), request_id: `mock-dash-${Date.now()}` },
     };
   }
 

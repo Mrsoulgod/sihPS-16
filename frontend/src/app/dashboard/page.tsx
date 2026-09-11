@@ -86,8 +86,8 @@ export default function DashboardPage() {
     );
   }
 
-  // Error state
-  if (isError || !data) {
+  // Error state or data is not a valid object
+  if (isError || !data || Array.isArray(data) || !data.kpis) {
     return (
       <div className="max-w-4xl mx-auto my-12 bg-white p-8 rounded-xl border border-rose-200 shadow-sm text-center">
         <div className="h-12 w-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
@@ -114,7 +114,7 @@ export default function DashboardPage() {
   // Phase 11D: Automatically dispatch District / CALA Officer to District Acquisition Control Center
   const isDistrictOfficer =
     user?.role_id === RoleCode.DISTRICT_OFFICER ||
-    data.scope_level === "DISTRICT";
+    data?.scope_level === "DISTRICT";
 
   if (isDistrictOfficer) {
     return (
@@ -129,7 +129,7 @@ export default function DashboardPage() {
   // Phase 11C: Automatically dispatch State Officer to State Acquisition Control Center
   const isStateOfficer =
     user?.role_id === RoleCode.STATE_OFFICER ||
-    data.scope_level === "STATE";
+    data?.scope_level === "STATE";
 
   if (isStateOfficer) {
     return (
