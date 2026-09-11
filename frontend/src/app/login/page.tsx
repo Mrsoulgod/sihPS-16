@@ -281,10 +281,13 @@ export default function LoginPage() {
         username_or_email: username.trim(),
         password: pass,
       });
-      router.push("/dashboard");
+      if (typeof window !== "undefined") {
+        window.location.href = "/dashboard";
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       setFormError(err.message || "Authentication failed. Please verify credentials.");
-    } finally {
       setIsSubmitting(false);
       setSubmittingUser(null);
     }

@@ -858,21 +858,23 @@ export async function loginUser(credentials: LoginCredentials): Promise<ApiSucce
 
 export async function fetchCurrentUser(): Promise<ApiSuccessResponse<UserSummary>> {
   const token = getStoredToken();
-  if (!token) {
+  const stored = getStoredUser();
+
+  if (!token && !stored) {
     throw new Error("No active session credentials found.");
   }
+
   try {
     const res = await apiClient<UserSummary>("/api/v1/auth/me", {
       method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (res.data) {
       setStoredUser(res.data);
     }
     return res;
   } catch (err) {
-    const stored = getStoredUser();
-    if (stored && token.startsWith("demo_token_")) {
+    if (stored) {
       return {
         success: true,
         data: stored,

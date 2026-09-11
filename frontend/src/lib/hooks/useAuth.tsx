@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = getStoredToken();
     const storedUser = getStoredUser();
 
-    if (!token) {
+    if (!token && !storedUser) {
       setUser(null);
       setIsLoading(false);
       return;
@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (storedUser) {
       setUser(storedUser);
+      setIsLoading(false);
     }
 
     try {
@@ -60,10 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setError(null);
     } catch (err: any) {
-      console.warn("Session validation failed, resetting unauthenticated state:", err);
-      removeStoredToken();
-      removeStoredUser();
-      setUser(null);
+      console.warn("Live session verification unavailable, using local authenticated state:", err);
+      if (!storedUser) {
+        removeStoredToken();
+        removeStoredUser();
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
