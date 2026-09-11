@@ -725,7 +725,14 @@ export function getStoredUser(): UserSummary | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.role_id && parsed.full_name) {
+      return parsed;
+    }
+    // Clean up corrupted storage
+    localStorage.removeItem(USER_KEY);
+    return null;
   } catch {
     return null;
   }
@@ -733,7 +740,9 @@ export function getStoredUser(): UserSummary | null {
 
 export function setStoredUser(user: UserSummary): void {
   if (typeof window !== "undefined") {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    if (user && typeof user === "object" && !Array.isArray(user) && user.role_id) {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    }
   }
 }
 
@@ -743,7 +752,7 @@ export function removeStoredUser(): void {
   }
 }
 
-function findDemoUser(identifier: string): UserSummary {
+export function findDemoUser(identifier: string): UserSummary {
   const clean = identifier.trim().toLowerCase();
   if (FRONTEND_DEMO_USERS[clean]) {
     return FRONTEND_DEMO_USERS[clean];

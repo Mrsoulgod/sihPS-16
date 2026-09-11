@@ -270,7 +270,13 @@ export default function LoginPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const selectedState = STATE_PORTALS.find((s) => s.code === selectedStateCode) || STATE_PORTALS[0];
-  const selectedDistrict = selectedState.districts.find((d) => d.id === selectedDistrictId) || selectedState.districts[0];
+  const selectedDistrict =
+    selectedState?.districts?.find((d) => d.id === selectedDistrictId) ||
+    selectedState?.districts?.[0] || {
+      id: "DST-JAI",
+      name: "Jaipur District",
+      calaOfficer: { username: "cala_jaipur", name: "Dr. Amit Sharma, IAS", designation: "District Collector & CALA" },
+    };
 
   const handleExecuteLogin = async (username: string, pass: string = "Password@123") => {
     setFormError(null);
@@ -302,8 +308,8 @@ export default function LoginPage() {
     await handleExecuteLogin(usernameOrEmail, password);
   };
 
-  // If already authenticated
-  if (isAuthenticated && user) {
+  // If already authenticated with valid user object
+  if (isAuthenticated && user && typeof user === "object" && !Array.isArray(user) && user.full_name) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center items-center p-4">
         <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-xl p-6 space-y-4">

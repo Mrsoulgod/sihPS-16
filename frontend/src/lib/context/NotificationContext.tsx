@@ -325,33 +325,41 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<SystemNotification[]>([]);
 
+  const safeUser = user && typeof user === "object" && !Array.isArray(user) ? user : null;
+  const roleId = safeUser?.role_id;
+  const orgName = safeUser?.organization;
+  const districtId = safeUser?.district_id;
+
   // Sync / Load Notifications based on user persona
   useEffect(() => {
-    const storageKey = `nlams_notifications_${user?.role_id || "ANONYMOUS"}_${user?.district_id || "ALL"}`;
+    const storageKey = `nlams_notifications_${roleId || "ANONYMOUS"}_${districtId || "ALL"}`;
     const stored = typeof window !== "undefined" ? localStorage.getItem(storageKey) : null;
 
     if (stored) {
       try {
-        setNotifications(JSON.parse(stored));
-        return;
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setNotifications(parsed);
+          return;
+        }
       } catch (e) {
         console.error("Error parsing stored notifications", e);
       }
     }
 
     // Default Seed
-    const initial = getDefaultNotificationsForRole(user?.role_id, user?.organization);
+    const initial = getDefaultNotificationsForRole(roleId, orgName);
     setNotifications(initial);
     if (typeof window !== "undefined") {
       localStorage.setItem(storageKey, JSON.stringify(initial));
     }
-  }, [user?.role_id, user?.district_id, user?.organization]);
+  }, [roleId, districtId, orgName]);
 
   // Persist helper
   const persistNotifications = (updated: SystemNotification[]) => {
     setNotifications(updated);
     if (typeof window !== "undefined") {
-      const storageKey = `nlams_notifications_${user?.role_id || "ANONYMOUS"}_${user?.district_id || "ALL"}`;
+      const storageKey = `nlams_notifications_${roleId || "ANONYMOUS"}_${districtId || "ALL"}`;
       localStorage.setItem(storageKey, JSON.stringify(updated));
     }
   };

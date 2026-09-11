@@ -16,8 +16,267 @@ import {
   BottleneckItem,
   RiskOverviewResponse,
   ReportTypeInfo,
-  ReportPreviewResponse
+  ReportPreviewResponse,
 } from "../types/analytics";
+import { UserSummary, LoginResponseData } from "../types/auth";
+
+// -------------------------------------------------------------
+// 0. CANONICAL AUTH & PERSONA DATA
+// -------------------------------------------------------------
+export const MOCK_DEMO_USERS: Record<string, UserSummary> = {
+  central_admin: {
+    id: "00000000-0000-0000-0000-000000000001",
+    username: "central_admin",
+    email: "central@gov.demo",
+    full_name: "Shri Rajesh Kumar, IAS",
+    display_name: "Shri Rajesh Kumar, IAS (Joint Secretary)",
+    designation: "Joint Secretary (Land Acquisition & National Highways)",
+    organization: "Ministry of Road Transport & Highways (MoRTH)",
+    role_id: "ROLE_CENTRAL_OFFICER",
+    role_name: "Central Ministry Officer",
+    state_id: null,
+    state_name: null,
+    district_id: null,
+    district_name: null,
+    jurisdiction: {
+      level: "CENTRAL",
+      scope_display: "All India (National Mandate)",
+    },
+    permissions: [
+      "VIEW_NATIONAL_PIPELINE",
+      "VIEW_ALL_STATES",
+      "APPROVE_CENTRAL_SANCTIONS",
+      "VIEW_ANALYTICS",
+      "EXPORT_MIS_REPORTS",
+      "VIEW_GIS_NATIONAL",
+    ],
+    is_active: true,
+  },
+  central_dg: {
+    id: "00000000-0000-0000-0000-000000000011",
+    username: "central_dg",
+    email: "dg.dolr@gov.demo",
+    full_name: "Smt. Sunita Rao, IDAS",
+    display_name: "Smt. Sunita Rao, IDAS (Director General)",
+    designation: "Director General (Statutory Compliance & Land Audits)",
+    organization: "Department of Land Resources (DoLR), MoRD",
+    role_id: "ROLE_CENTRAL_OFFICER",
+    role_name: "Central Ministry Officer",
+    state_id: null,
+    state_name: null,
+    district_id: null,
+    district_name: null,
+    jurisdiction: {
+      level: "CENTRAL",
+      scope_display: "All India (Statutory Compliance & CAG Audit)",
+    },
+    permissions: [
+      "VIEW_NATIONAL_PIPELINE",
+      "VIEW_ALL_STATES",
+      "APPROVE_CENTRAL_SANCTIONS",
+      "VIEW_ANALYTICS",
+      "EXPORT_MIS_REPORTS",
+      "VIEW_GIS_NATIONAL",
+    ],
+    is_active: true,
+  },
+  state_rj_officer: {
+    id: "00000000-0000-0000-0000-000000000004",
+    username: "state_rj_officer",
+    email: "state@gov.demo",
+    full_name: "Smt. Sunita Verma, IAS",
+    display_name: "Smt. Sunita Verma, IAS (Principal Secretary)",
+    designation: "Principal Secretary (Revenue)",
+    organization: "Revenue & Colonisation Department, Govt. of Rajasthan",
+    role_id: "ROLE_STATE_OFFICER",
+    role_name: "State Government Officer",
+    state_id: "IN-RJ",
+    state_name: "Rajasthan",
+    district_id: null,
+    district_name: null,
+    jurisdiction: {
+      level: "STATE",
+      state_id: "IN-RJ",
+      state_name: "Rajasthan",
+      scope_display: "Rajasthan State (IN-RJ)",
+    },
+    permissions: [
+      "VIEW_STATE_PIPELINE",
+      "OVERSEE_DISTRICTS",
+      "REVIEW_SECTION_19",
+      "VIEW_ANALYTICS",
+      "EXPORT_STATE_REPORTS",
+      "VIEW_GIS_STATE",
+    ],
+    is_active: true,
+  },
+  cala_jaipur: {
+    id: "00000000-0000-0000-0000-000000000002",
+    username: "cala_jaipur",
+    email: "district@gov.demo",
+    full_name: "Dr. Amit Sharma, IAS",
+    display_name: "Dr. Amit Sharma, IAS (District Collector & CALA)",
+    designation: "District Collector & CALA",
+    organization: "District Land Acquisition Authority, Jaipur",
+    role_id: "ROLE_DISTRICT_OFFICER",
+    role_name: "District CALA / Collector",
+    state_id: "IN-RJ",
+    state_name: "Rajasthan",
+    district_id: "DST-JAI",
+    district_name: "Jaipur",
+    jurisdiction: {
+      level: "DISTRICT",
+      state_id: "IN-RJ",
+      state_name: "Rajasthan",
+      district_id: "DST-JAI",
+      district_name: "Jaipur",
+      scope_display: "Jaipur District (DST-JAI), Rajasthan",
+    },
+    permissions: [
+      "MANAGE_DISTRICT_PROJECTS",
+      "APPROVE_WORKFLOW_STAGES",
+      "CONDUCT_OBJECTIONS",
+      "DECLARE_SECTION_23_AWARD",
+      "AUTHORIZE_PFMS_DISBURSEMENTS",
+      "APPROVE_SECTION_38_POSSESSION",
+      "VIEW_GIS_DISTRICT",
+    ],
+    is_active: true,
+  },
+  nhai_pd_jaipur: {
+    id: "00000000-0000-0000-0000-000000000005",
+    username: "nhai_pd_jaipur",
+    email: "agency@gov.demo",
+    full_name: "Er. Vikram Singh",
+    display_name: "Er. Vikram Singh (Project Director NHAI)",
+    designation: "Project Director (NHAI Jaipur)",
+    organization: "National Highways Authority of India (NHAI)",
+    role_id: "ROLE_PROJECT_AGENCY",
+    role_name: "Project Implementing Agency",
+    state_id: "IN-RJ",
+    state_name: "Rajasthan",
+    district_id: "DST-JAI",
+    district_name: "Jaipur",
+    jurisdiction: {
+      level: "PROJECT",
+      state_id: "IN-RJ",
+      state_name: "Rajasthan",
+      district_id: "DST-JAI",
+      district_name: "Jaipur",
+      project_id: "PRJ-NH48-PKG4",
+      scope_display: "NHAI Jaipur Projects (PRJ-NH48-PKG4)",
+    },
+    permissions: [
+      "SUBMIT_PROJECT_PROPOSALS",
+      "UPLOAD_DPR",
+      "DEPOSIT_COMPENSATION",
+      "REQUEST_POSSESSION",
+      "VIEW_PROJECT_PROGRESS",
+    ],
+    is_active: true,
+  },
+  admin: {
+    id: "00000000-0000-0000-0000-000000000009",
+    username: "admin",
+    email: "admin@gov.demo",
+    full_name: "Principal Systems Administrator",
+    display_name: "Principal Systems Administrator (NIC)",
+    designation: "Principal Systems Administrator",
+    organization: "National Informatics Centre (NIC) / NLAMS Central Command",
+    role_id: "ROLE_SYSTEM_ADMIN",
+    role_name: "System Administrator",
+    state_id: null,
+    state_name: null,
+    district_id: null,
+    district_name: null,
+    jurisdiction: {
+      level: "SYSTEM",
+      scope_display: "National Infrastructure & Platform Root",
+    },
+    permissions: [
+      "MANAGE_USERS",
+      "VIEW_AUDIT_LOGS",
+      "CONFIGURE_SYSTEM",
+      "OVERRIDE_WORKFLOW_STAGE",
+      "MANAGE_MASTER_DATA",
+      "VIEW_NATIONAL_PIPELINE",
+      "VIEW_ALL_STATES",
+    ],
+    is_active: true,
+  },
+};
+
+export function getMockDemoUser(identifier: string): UserSummary {
+  const clean = (identifier || "central_admin").trim().toLowerCase();
+  if (MOCK_DEMO_USERS[clean]) {
+    return MOCK_DEMO_USERS[clean];
+  }
+  for (const u of Object.values(MOCK_DEMO_USERS)) {
+    if (u.email.toLowerCase() === clean || u.username.toLowerCase() === clean) {
+      return u;
+    }
+  }
+
+  const isState = clean.includes("state");
+  const isDistrict = clean.includes("cala") || clean.includes("district");
+  const isField = clean.includes("patwari") || clean.includes("field");
+  const isSocial = clean.includes("randr") || clean.includes("social");
+  const isAgency = clean.includes("nhai") || clean.includes("agency");
+
+  const role_id = isState
+    ? "ROLE_STATE_OFFICER"
+    : isDistrict
+    ? "ROLE_DISTRICT_OFFICER"
+    : isField
+    ? "ROLE_FIELD_OFFICER"
+    : isSocial
+    ? "ROLE_SOCIAL_OFFICER"
+    : isAgency
+    ? "ROLE_PROJECT_AGENCY"
+    : "ROLE_CENTRAL_OFFICER";
+
+  const role_name = isState
+    ? "State Government Officer"
+    : isDistrict
+    ? "District CALA / Collector"
+    : isField
+    ? "Field Officer / Surveyor"
+    : isSocial
+    ? "Social Development & R&R Officer"
+    : isAgency
+    ? "Project Implementing Agency"
+    : "Central Ministry Officer";
+
+  return {
+    id: `dyn-usr-${clean}-${Date.now()}`,
+    username: clean,
+    email: `${clean}@gov.demo`,
+    full_name: clean.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    display_name: `${clean.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} (${role_name})`,
+    designation: role_name,
+    organization: "National Land Acquisition & Management System (NLAMS)",
+    role_id,
+    role_name,
+    state_id: isDistrict || isField || isSocial || isAgency ? "IN-RJ" : isState ? "IN-RJ" : null,
+    state_name: isDistrict || isField || isSocial || isAgency ? "Rajasthan" : isState ? "Rajasthan" : null,
+    district_id: isDistrict || isField || isSocial || isAgency ? "DST-JAI" : null,
+    district_name: isDistrict || isField || isSocial || isAgency ? "Jaipur" : null,
+    jurisdiction: {
+      level: isState ? "STATE" : isDistrict ? "DISTRICT" : isField ? "FIELD" : isSocial ? "SOCIAL" : isAgency ? "PROJECT" : "CENTRAL",
+      scope_display: `${clean.replace(/_/g, " ").toUpperCase()} Jurisdiction`,
+    },
+    permissions: [
+      "VIEW_NATIONAL_PIPELINE",
+      "VIEW_STATE_PIPELINE",
+      "MANAGE_DISTRICT_PROJECTS",
+      "CONDUCT_GROUND_SURVEY",
+      "MANAGE_RR_SCHEMES",
+      "SUBMIT_PROJECT_PROPOSALS",
+      "VIEW_ANALYTICS",
+    ],
+    is_active: true,
+  };
+}
 
 // -------------------------------------------------------------
 // 1. CANONICAL PROJECTS DATA
@@ -893,7 +1152,77 @@ export function handleMockApiRequest<T>(
   options: RequestInit & { params?: Record<string, unknown> } = {}
 ): ApiSuccessResponse<T> {
   const method = (options.method || "GET").toUpperCase();
-  const clean = endpoint.split("?")[0];
+  let clean = endpoint.split("?")[0].trim();
+  clean = clean.replace(/^\/api\/v1/, "");
+  if (!clean.startsWith("/")) clean = "/" + clean;
+
+  // 0. AUTHENTICATION ENDPOINTS
+  if (clean === "/auth/login" && method === "POST") {
+    let username = "central_admin";
+    try {
+      if (options.body) {
+        const parsedBody = JSON.parse(options.body as string);
+        username = parsedBody.username_or_email || parsedBody.username || "central_admin";
+      }
+    } catch {
+      // ignore JSON parse error
+    }
+    const demoUser = getMockDemoUser(username);
+    const mockToken = `demo_token_${demoUser.id}`;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nlams_access_token", mockToken);
+      localStorage.setItem("nlams_user_profile", JSON.stringify(demoUser));
+    }
+    const loginData: LoginResponseData = {
+      access_token: mockToken,
+      token_type: "bearer",
+      expires_in_seconds: 86400,
+      user: demoUser,
+    };
+    return {
+      success: true,
+      data: loginData as unknown as T,
+      message: `Welcome, ${demoUser.full_name}. Session initiated.`,
+      metadata: { timestamp: new Date().toISOString(), request_id: `mock-auth-login-${Date.now()}` },
+    };
+  }
+
+  if (clean === "/auth/me" && method === "GET") {
+    let currentUser: UserSummary | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("nlams_user_profile");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.role_id && parsed.full_name) {
+            currentUser = parsed;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    const userToReturn = currentUser || getMockDemoUser("central_admin");
+    return {
+      success: true,
+      data: userToReturn as unknown as T,
+      message: "Current official session verified.",
+      metadata: { timestamp: new Date().toISOString(), request_id: `mock-auth-me-${Date.now()}` },
+    };
+  }
+
+  if (clean === "/auth/logout") {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("nlams_access_token");
+      localStorage.removeItem("nlams_user_profile");
+    }
+    return {
+      success: true,
+      data: null as unknown as T,
+      message: "Logged out successfully.",
+      metadata: { timestamp: new Date().toISOString(), request_id: `mock-auth-logout-${Date.now()}` },
+    };
+  }
 
   // 1. /projects
   if (clean === "/projects" && method === "GET") {
