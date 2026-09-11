@@ -266,6 +266,7 @@ export default function LoginPage() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("Password@123");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingUser, setSubmittingUser] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const selectedState = STATE_PORTALS.find((s) => s.code === selectedStateCode) || STATE_PORTALS[0];
@@ -274,18 +275,18 @@ export default function LoginPage() {
   const handleExecuteLogin = async (username: string, pass: string = "Password@123") => {
     setFormError(null);
     setIsSubmitting(true);
+    setSubmittingUser(username);
     try {
       await login({
         username_or_email: username.trim(),
         password: pass,
       });
       router.push("/dashboard");
-      if (typeof window !== "undefined") {
-        window.location.href = "/dashboard";
-      }
     } catch (err: any) {
       setFormError(err.message || "Authentication failed. Please verify credentials.");
+    } finally {
       setIsSubmitting(false);
+      setSubmittingUser(null);
     }
   };
 
@@ -513,7 +514,7 @@ export default function LoginPage() {
                     disabled={isSubmitting}
                     className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#0B2545] hover:bg-[#138808] text-white text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
                   >
-                    {isSubmitting ? (
+                    {submittingUser === member.username ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <>
@@ -603,8 +604,14 @@ export default function LoginPage() {
                       disabled={isSubmitting}
                       className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[#138808] hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
                     >
-                      <UserCheck className="h-3.5 w-3.5" />
-                      <span>Login as State Revenue Secretary</span>
+                      {submittingUser === state.username ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <UserCheck className="h-3.5 w-3.5" />
+                          <span>Login as State Revenue Secretary</span>
+                        </>
+                      )}
                     </button>
 
                     <button
@@ -731,7 +738,11 @@ export default function LoginPage() {
                       disabled={isSubmitting}
                       className="px-4 py-2 rounded-xl bg-[#138808] hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors self-start sm:self-auto"
                     >
-                      Login as CALA / Collector
+                      {submittingUser === selectedDistrict.calaOfficer.username ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <span>Login as CALA / Collector</span>
+                      )}
                     </button>
                   </div>
 
@@ -756,7 +767,11 @@ export default function LoginPage() {
                         disabled={isSubmitting}
                         className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow-xs transition-colors self-start sm:self-auto"
                       >
-                        Login as Field Patwari
+                        {submittingUser === selectedDistrict.fieldOfficer!.username ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <span>Login as Field Patwari</span>
+                        )}
                       </button>
                     </div>
                   )}
@@ -782,7 +797,11 @@ export default function LoginPage() {
                         disabled={isSubmitting}
                         className="px-4 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold shadow-xs transition-colors self-start sm:self-auto"
                       >
-                        Login as R&amp;R Officer
+                        {submittingUser === selectedDistrict.socialOfficer!.username ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <span>Login as R&amp;R Officer</span>
+                        )}
                       </button>
                     </div>
                   )}
@@ -822,8 +841,14 @@ export default function LoginPage() {
                   disabled={isSubmitting}
                   className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-xs transition-colors"
                 >
-                  <span>Sign In as Project Agency (NHAI)</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  {submittingUser === "nhai_pd_jaipur" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Sign In as Project Agency (NHAI)</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -853,8 +878,14 @@ export default function LoginPage() {
                   disabled={isSubmitting}
                   className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-colors"
                 >
-                  <span>Sign In as Super Admin</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  {submittingUser === "admin" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Sign In as Super Admin</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </>
+                  )}
                 </button>
               </div>
             </div>

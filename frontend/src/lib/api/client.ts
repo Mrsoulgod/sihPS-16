@@ -29,10 +29,18 @@ export const apiClient: ApiClientFunction = async function <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiSuccessResponse<T>> {
-  const rawBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000")
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  let rawBase = (envUrl || "http://localhost:8000")
     .trim()
     .replace(/\/+$/, "")
     .replace(/\/api\/v1\/?$/, "");
+
+  // Detect HTTPS -> HTTP mixed content on deployed platforms (e.g., Vercel)
+  const isHttpsClient = typeof window !== "undefined" && window.location.protocol === "https:";
+  if (isHttpsClient && !envUrl && rawBase.startsWith("http://")) {
+    // If on HTTPS domain and no public backend URL configured, throw immediate client error to trigger instant demo fallback
+    throw new Error("Mixed content blocked: Backend not accessible over HTTPS from Vercel.");
+  }
   
   let cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   cleanEndpoint = cleanEndpoint.replace(/^\/api\/v1/, "");
@@ -52,35 +60,47 @@ export const apiClient: ApiClientFunction = async function <T>(
     }
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  // Set 3.5s timeout controller to prevent infinite UI hangs
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-  const json = await response.json();
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      signal: options.signal || controller.signal,
+    });
 
-  if (!response.ok || (json && typeof json === "object" && "success" in json && json.success === false)) {
-    const errorData = json?.error || {
-      code: "API_ERROR",
-      message: json?.message || "An unexpected error occurred.",
-      details: [],
-    };
-    throw new ApiClientError(response.status, errorData);
+    clearTimeout(timeoutId);
+
+    const json = await response.json();
+
+    if (!response.ok || (json && typeof json === "object" && "success" in json && json.success === false)) {
+      const errorData = json?.error || {
+        code: "API_ERROR",
+        message: json?.message || "An unexpected error occurred.",
+        details: [],
+      };
+      throw new ApiClientError(response.status, errorData);
+    }
+
+    if (json && typeof json === "object" && "success" in json) {
+      return json as ApiSuccessResponse<T>;
+    }
+
+    return {
+      success: true,
+      data: json,
+      message: "Success",
+      metadata: {
+        timestamp: new Date().toISOString(),
+        request_id: "",
+      },
+    } as ApiSuccessResponse<T>;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  if (json && typeof json === "object" && "success" in json) {
-    return json as ApiSuccessResponse<T>;
-  }
-
-  return {
-    success: true,
-    data: json,
-    message: "Success",
-    metadata: {
-      timestamp: new Date().toISOString(),
-      request_id: "",
-    },
-  } as ApiSuccessResponse<T>;
 } as ApiClientFunction;
 
 apiClient.get = async function <T>(
