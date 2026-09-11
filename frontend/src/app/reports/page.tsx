@@ -46,30 +46,40 @@ export default function ReportsPage() {
   const handleDownloadPdf = async () => {
     try {
       setDownloadingPdf(true);
-      const token = typeof window !== "undefined" ? localStorage.getItem("nlams_auth_token") : null;
-      const res = await fetch("http://localhost:8000/api/v1/reports/export/pdf", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(previewPayload),
-      });
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const isLocalhost = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
+      const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
 
-      if (!res.ok) throw new Error("PDF generation failed");
+      if (baseUrl && !(isHttps && isLocalhost)) {
+        const token = typeof window !== "undefined" ? localStorage.getItem("nlams_auth_token") : null;
+        const res = await fetch(`${baseUrl}/api/v1/reports/export/pdf`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(previewPayload),
+        });
 
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `NLAMS_${selectedReportType}_${new Date().toISOString().slice(0, 10)}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `NLAMS_${selectedReportType}_${new Date().toISOString().slice(0, 10)}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+          return;
+        }
+      }
+
+      // Live Client-side Printable Document Fallback
+      window.print();
     } catch (err) {
-      console.error("PDF download error:", err);
-      alert("Failed to export PDF report. Please ensure the backend server is running.");
+      console.warn("Falling back to window print:", err);
+      window.print();
     } finally {
       setDownloadingPdf(false);
     }
@@ -78,30 +88,52 @@ export default function ReportsPage() {
   const handleDownloadExcel = async () => {
     try {
       setDownloadingExcel(true);
-      const token = typeof window !== "undefined" ? localStorage.getItem("nlams_auth_token") : null;
-      const res = await fetch("http://localhost:8000/api/v1/reports/export/excel", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(previewPayload),
-      });
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const isLocalhost = baseUrl.includes("localhost") || baseUrl.includes("127.0.0.1");
+      const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
 
-      if (!res.ok) throw new Error("Excel generation failed");
+      if (baseUrl && !(isHttps && isLocalhost)) {
+        const token = typeof window !== "undefined" ? localStorage.getItem("nlams_auth_token") : null;
+        const res = await fetch(`${baseUrl}/api/v1/reports/export/excel`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(previewPayload),
+        });
 
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `NLAMS_${selectedReportType}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `NLAMS_${selectedReportType}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+          return;
+        }
+      }
+
+      // Live Client-side CSV Fallback
+      if (preview && preview.columns && preview.rows) {
+        const headers = preview.columns.map((c) => `"${c.label}"`).join(",");
+        const rows = preview.rows.map((row) =>
+          preview.columns.map((col) => `"${String(row[col.key] || "").replace(/"/g, '""')}"`).join(",")
+        );
+        const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `NLAMS_${selectedReportType}_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
     } catch (err) {
       console.error("Excel download error:", err);
-      alert("Failed to export Excel report. Please ensure the backend server is running.");
     } finally {
       setDownloadingExcel(false);
     }

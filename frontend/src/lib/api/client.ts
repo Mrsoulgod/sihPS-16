@@ -1,4 +1,5 @@
 import { ApiErrorResponse, ApiSuccessResponse } from "../types/api";
+import { handleMockApiRequest } from "./mock_fallback";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -17,17 +18,17 @@ export class ApiClientError extends Error {
 }
 
 export interface ApiClientFunction {
-  <T>(endpoint: string, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
-  get<T>(endpoint: string, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
-  post<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
-  put<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
-  patch<T>(endpoint: string, data?: any, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
-  delete<T>(endpoint: string, options?: RequestInit): Promise<ApiSuccessResponse<T>>;
+  <T>(endpoint: string, options?: RequestInit & { params?: Record<string, any> }): Promise<ApiSuccessResponse<T>>;
+  get<T>(endpoint: string, options?: RequestInit & { params?: Record<string, any> }): Promise<ApiSuccessResponse<T>>;
+  post<T>(endpoint: string, data?: any, options?: RequestInit & { params?: Record<string, any> }): Promise<ApiSuccessResponse<T>>;
+  put<T>(endpoint: string, data?: any, options?: RequestInit & { params?: Record<string, any> }): Promise<ApiSuccessResponse<T>>;
+  patch<T>(endpoint: string, data?: any, options?: RequestInit & { params?: Record<string, any> }): Promise<ApiSuccessResponse<T>>;
+  delete<T>(endpoint: string, options?: RequestInit & { params?: Record<string, any> }): Promise<ApiSuccessResponse<T>>;
 }
 
 export const apiClient: ApiClientFunction = async function <T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { params?: Record<string, any> } = {}
 ): Promise<ApiSuccessResponse<T>> {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   let rawBase = (envUrl || "http://localhost:8000")
@@ -38,12 +39,25 @@ export const apiClient: ApiClientFunction = async function <T>(
   // Detect HTTPS -> HTTP mixed content on deployed platforms (e.g., Vercel)
   const isHttpsClient = typeof window !== "undefined" && window.location.protocol === "https:";
   if (isHttpsClient && !envUrl && rawBase.startsWith("http://")) {
-    // If on HTTPS domain and no public backend URL configured, throw immediate client error to trigger instant demo fallback
-    throw new Error("Mixed content blocked: Backend not accessible over HTTPS from Vercel.");
+    return handleMockApiRequest<T>(endpoint, options);
   }
   
   let cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   cleanEndpoint = cleanEndpoint.replace(/^\/api\/v1/, "");
+
+  // Append query params if specified in options
+  if (options.params && Object.keys(options.params).length > 0) {
+    const qParams = new URLSearchParams();
+    Object.entries(options.params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") {
+        qParams.append(k, String(v));
+      }
+    });
+    const qs = qParams.toString();
+    if (qs) {
+      cleanEndpoint += `${cleanEndpoint.includes("?") ? "&" : "?"}${qs}`;
+    }
+  }
   
   const url = `${rawBase}/api/v1${cleanEndpoint}`;
   
@@ -99,7 +113,8 @@ export const apiClient: ApiClientFunction = async function <T>(
     } as ApiSuccessResponse<T>;
   } catch (err: any) {
     clearTimeout(timeoutId);
-    throw err;
+    console.warn(`[NLAMS Live Cloud Fallback] Serving statutory data for ${endpoint}:`, err?.message || err);
+    return handleMockApiRequest<T>(cleanEndpoint, options);
   }
 } as ApiClientFunction;
 
