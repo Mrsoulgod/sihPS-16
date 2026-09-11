@@ -427,7 +427,7 @@ export function AppHeader({ onToggleSidebar, isSidebarOpen }: AppHeaderProps) {
                     {user.full_name}
                   </span>
                   <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border uppercase tracking-wider ${getRoleBadgeStyle(user.role_id)}`}>
-                    {user.role_name || user.role_id.replace("ROLE_", "")}
+                    {user.role_name || user.role_id?.replace("ROLE_", "") || "OFFICER"}
                   </span>
                 </div>
                 <div className="text-[10px] text-slate-300 flex items-center gap-1 mt-0.5">

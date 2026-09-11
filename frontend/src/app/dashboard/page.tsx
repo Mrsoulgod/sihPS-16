@@ -236,7 +236,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2.5 self-start md:self-auto text-xs">
             <div className="hidden sm:flex items-center gap-1.5 text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg font-medium">
               <Calendar className="h-3.5 w-3.5 text-slate-400" />
-              <span>{currentDate}</span>
+              <span suppressHydrationWarning>{currentDate}</span>
             </div>
 
             <button
