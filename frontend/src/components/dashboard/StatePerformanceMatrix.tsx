@@ -48,9 +48,10 @@ export function StatePerformanceMatrix({ states, onSelectState }: StatePerforman
   const filteredStates = useMemo(() => {
     return states
       .filter((st) => {
-        const matchesSearch =
-          st.state_name.toLowerCase().includes(search.toLowerCase()) ||
-          st.state_id.toLowerCase().includes(search.toLowerCase());
+        const sName = (st.state_name || "").toLowerCase();
+        const sId = (st.state_id || "").toLowerCase();
+        const q = search.toLowerCase();
+        const matchesSearch = !search.trim() || sName.includes(q) || sId.includes(q);
         const matchesRisk =
           riskFilter === "ALL" || (st.risk_level || "LOW") === riskFilter;
         return matchesSearch && matchesRisk;

@@ -31,6 +31,7 @@ export function FieldVerificationModal({
   const [recommendation, setRecommendation] = useState<"RECOMMENDED" | "RE_SURVEY_REQUIRED" | "REJECTED">("RECOMMENDED");
   const [remarks, setRemarks] = useState("");
   const [gpsError, setGpsError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const verifyMutation = useFieldVerification(parcelId);
 
@@ -69,8 +70,12 @@ export function FieldVerificationModal({
         recommendation: recommendation,
       });
 
-      if (onSuccess) onSuccess();
-      onClose();
+      setIsSuccess(true);
+      setTimeout(() => {
+        setIsSuccess(false);
+        if (onSuccess) onSuccess();
+        onClose();
+      }, 700);
     } catch {
       // Error handled by verifyMutation.error
     }
@@ -272,17 +277,24 @@ export function FieldVerificationModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={verifyMutation.isPending || isSuccess}
               className="rounded-lg px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={verifyMutation.isPending}
-              className="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors"
+              disabled={verifyMutation.isPending || isSuccess}
+              className={`inline-flex items-center rounded-lg px-4 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-50 transition-colors ${
+                isSuccess ? "bg-emerald-700" : "bg-primary-600 hover:bg-primary-700"
+              }`}
             >
               <CheckCircle2 className="h-4 w-4 mr-1.5" />
-              {verifyMutation.isPending ? "Submitting..." : "Submit Verification"}
+              {isSuccess
+                ? "Verification Recorded"
+                : verifyMutation.isPending
+                ? "Submitting..."
+                : "Submit Verification"}
             </button>
           </div>
         </form>

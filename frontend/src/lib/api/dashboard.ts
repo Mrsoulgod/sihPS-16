@@ -210,6 +210,35 @@ function getTailoredFallbackDashboard(): DashboardSummaryData {
         icon: "Send",
       },
     ];
+  } else if (user.role_id === "ROLE_PROJECT_AGENCY") {
+    base.scope_level = "AGENCY";
+    base.jurisdiction_name = `${user.organization || "NHAI"} (Implementing Agency View)`;
+    base.quick_actions = [
+      {
+        id: "qa-agency-1",
+        label: "+ New Project Proposal",
+        description: "Draft and submit statutory DPR & Land Requirement",
+        target_route: "/projects/new",
+        badge: "New Proposal",
+        icon: "FilePlus",
+      },
+      {
+        id: "qa-agency-2",
+        label: "My Projects",
+        description: "Track project proposals & scrutiny status",
+        target_route: "/projects",
+        badge: "Active",
+        icon: "Building2",
+      },
+      {
+        id: "qa-agency-3",
+        label: "Survey Requests",
+        description: "Request joint cadastral verification with CALA",
+        target_route: "/survey-requests",
+        badge: "Survey",
+        icon: "MapPin",
+      },
+    ];
   } else if (user.role_id === "ROLE_STATE_OFFICER") {
     base.scope_level = "STATE";
     base.jurisdiction_name = `${user.state_name || "Rajasthan"} (State View)`;
@@ -246,6 +275,27 @@ export async function fetchDashboardSummary(
   }
 }
 
+export async function fetchAgencyDashboard(): Promise<ApiSuccessResponse<DashboardSummaryData>> {
+  const token = getStoredToken();
+  try {
+    return await apiClient<DashboardSummaryData>(`/api/v1/dashboard/agency`, {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  } catch (err) {
+    console.warn("Using fallback canonical agency dashboard:", err);
+    return {
+      success: true,
+      data: getTailoredFallbackDashboard(),
+      message: "Agency demo dashboard loaded successfully.",
+      metadata: {
+        timestamp: new Date().toISOString(),
+        request_id: `agency-demo-${Date.now()}`,
+      },
+    };
+  }
+}
+
 export async function fetchPublicDashboardSummary(
   stateId?: string,
   districtId?: string
@@ -273,4 +323,5 @@ export async function fetchPublicDashboardSummary(
     };
   }
 }
+
 

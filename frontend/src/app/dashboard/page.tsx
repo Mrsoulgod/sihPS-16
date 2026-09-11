@@ -16,6 +16,11 @@ import { RAndROverviewCard } from "@/components/dashboard/RAndROverviewCard";
 import { ProjectStatusSummary } from "@/components/dashboard/ProjectStatusSummary";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { QuickActionsPanel } from "@/components/dashboard/QuickActionsPanel";
+import { StateAcquisitionControl } from "@/components/dashboard/StateAcquisitionControl";
+import { DistrictAcquisitionControl } from "@/components/dashboard/DistrictAcquisitionControl";
+import { ProjectAgencyControl } from "@/components/dashboard/ProjectAgencyControl";
+import { FieldOfficerDashboard } from "@/components/dashboard/FieldOfficerDashboard";
+import { SocialOfficerDashboard } from "@/components/dashboard/SocialOfficerDashboard";
 import Link from "next/link";
 import {
   RefreshCw,
@@ -103,6 +108,81 @@ export default function DashboardPage() {
           <span>Retry Connection</span>
         </button>
       </div>
+    );
+  }
+
+  // Phase 11D: Automatically dispatch District / CALA Officer to District Acquisition Control Center
+  const isDistrictOfficer =
+    user?.role_id === RoleCode.DISTRICT_OFFICER ||
+    data.scope_level === "DISTRICT";
+
+  if (isDistrictOfficer) {
+    return (
+      <DistrictAcquisitionControl
+        data={data}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+      />
+    );
+  }
+
+  // Phase 11C: Automatically dispatch State Officer to State Acquisition Control Center
+  const isStateOfficer =
+    user?.role_id === RoleCode.STATE_OFFICER ||
+    data.scope_level === "STATE";
+
+  if (isStateOfficer) {
+    return (
+      <StateAcquisitionControl
+        data={data}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+      />
+    );
+  }
+
+  // Phase 11E: Automatically dispatch Project Agency to Project Agency Control Center
+  const isProjectAgency =
+    user?.role_id === RoleCode.PROJECT_AGENCY ||
+    data.scope_level === "AGENCY";
+
+  if (isProjectAgency) {
+    return (
+      <ProjectAgencyControl
+        data={data}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+      />
+    );
+  }
+
+  // Phase 11F: Automatically dispatch Field Officer to My Field Work dashboard
+  const isFieldOfficer =
+    user?.role_id === RoleCode.FIELD_OFFICER ||
+    data.scope_level === "FIELD";
+
+  if (isFieldOfficer) {
+    return (
+      <FieldOfficerDashboard
+        data={data}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+      />
+    );
+  }
+
+  // Phase 11G: Automatically dispatch Social / R&R Officer to R&R Case Management dashboard
+  const isSocialOfficer =
+    user?.role_id === RoleCode.SOCIAL_OFFICER ||
+    data.scope_level === "SOCIAL";
+
+  if (isSocialOfficer) {
+    return (
+      <SocialOfficerDashboard
+        data={data}
+        onRefresh={() => refetch()}
+        isRefreshing={isFetching}
+      />
     );
   }
 

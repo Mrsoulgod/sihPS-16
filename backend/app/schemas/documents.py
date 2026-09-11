@@ -62,6 +62,18 @@ class DocumentUploadVersionRequest(BaseModel):
     version_notes: str = Field(..., description="Reason / statutory basis for new version upload")
 
 
+class DocumentCreateRequest(BaseModel):
+    title: Optional[str] = None
+    entity_type: str = "PROJECT"  # PROJECT, PARCEL, AWARD, POSSESSION, RANDR
+    entity_id: uuid.UUID
+    document_type: str  # DPR, PROJECT_PROPOSAL, ALIGNMENT_KML, LAND_REQUIREMENT_STATEMENT, TECHNICAL_REPORT, ADMINISTRATIVE_APPROVAL, SUPPORTING_DOC
+    file_name: str
+    file_size_bytes: int
+    mime_type: str
+    sha256_hash: str
+    version_notes: Optional[str] = "Initial statutory submission"
+
+
 class DocumentHashVerificationResponse(BaseModel):
     document_id: uuid.UUID
     file_name: str

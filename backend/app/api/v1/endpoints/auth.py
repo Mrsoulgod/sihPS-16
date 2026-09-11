@@ -24,23 +24,22 @@ router = APIRouter()
 def build_jurisdiction_summary(user: User) -> JurisdictionSummary:
     """Derives canonical jurisdiction hierarchy and scope display for the authenticated user."""
     role_id = user.role_id or ""
-    state_id = user.state_id
-    state_name = user.state.name if user.state else ("Rajasthan" if state_id == "IN-RJ" else None)
-    district_id = user.district_id
-    district_name = user.district.name if user.district else ("Jaipur" if district_id == "DST-JAI" else None)
-
-    # Check demo metadata if available
     demo_data = get_canonical_demo_data(user.username) or {}
+
+    state_id = user.state_id or demo_data.get("state_id")
+    state_name = user.state.name if user.state else (demo_data.get("state_name") or ("Rajasthan" if state_id == "IN-RJ" else None))
+    district_id = user.district_id or demo_data.get("district_id")
+    district_name = user.district.name if user.district else (demo_data.get("district_name") or ("Jaipur" if district_id == "DST-JAI" else None))
 
     if role_id in ("ROLE_CENTRAL_OFFICER", "ROLE_ADMIN", "ROLE_SUPER_ADMIN"):
         level = "CENTRAL"
-        scope_display = "All India (National Mandate)"
+        scope_display = demo_data.get("scope_display") or "All India (National Mandate)"
     elif role_id == "ROLE_STATE_OFFICER":
         level = "STATE"
-        scope_display = f"{state_name or 'State'} (State Mandate)"
+        scope_display = demo_data.get("scope_display") or f"{state_name or 'State'} (State Mandate)"
     elif role_id == "ROLE_DISTRICT_OFFICER":
         level = "DISTRICT"
-        scope_display = f"{district_name or 'District'}, {state_name or ''}"
+        scope_display = demo_data.get("scope_display") or f"{district_name or 'District'}, {state_name or ''}"
     elif role_id == "ROLE_PROJECT_AGENCY":
         level = "PROJECT"
         scope_display = demo_data.get("scope_display") or f"{user.organization} (Project Scope)"
@@ -69,8 +68,11 @@ def build_jurisdiction_summary(user: User) -> JurisdictionSummary:
 def build_user_summary(user: User) -> UserSummaryResponse:
     """Helper to convert User model into rich UserSummaryResponse schema."""
     role_name = user.role.name if user.role else user.role_id
-    state_name = user.state.name if user.state else ("Rajasthan" if user.state_id == "IN-RJ" else None)
-    district_name = user.district.name if user.district else ("Jaipur" if user.district_id == "DST-JAI" else None)
+    demo_data = get_canonical_demo_data(user.username) or {}
+    state_id = user.state_id or demo_data.get("state_id")
+    state_name = user.state.name if user.state else (demo_data.get("state_name") or ("Rajasthan" if state_id == "IN-RJ" else None))
+    district_id = user.district_id or demo_data.get("district_id")
+    district_name = user.district.name if user.district else (demo_data.get("district_name") or ("Jaipur" if district_id == "DST-JAI" else None))
 
     return UserSummaryResponse(
         id=user.id,

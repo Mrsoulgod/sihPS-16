@@ -10,11 +10,27 @@ from app.schemas.documents import (
     DocumentItem,
     DocumentDetailResponse,
     DocumentUploadVersionRequest,
+    DocumentCreateRequest,
     DocumentHashVerificationResponse,
 )
 from app.services.document_service import DocumentService
 
 router = APIRouter()
+
+
+@router.post("", response_model=DocumentDetailResponse)
+async def create_document(
+    req: DocumentCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Upload and store a new statutory document (DPR, Proposal, Alignment, etc.) with SHA-256 hash.
+    """
+    try:
+        return await DocumentService.create_document(db, req, current_user)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("", response_model=List[DocumentItem])

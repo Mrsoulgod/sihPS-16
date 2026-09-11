@@ -90,7 +90,7 @@ export function AppShell({ children }: AppShellProps) {
       />
 
       {/* Main Body with Sidebar and Operations Content */}
-      <div className="flex flex-1 w-full max-w-[100vw] overflow-x-hidden">
+      <div className="flex flex-1 w-full max-w-[100vw] relative">
         <AppSidebar
           isMobileOpen={isMobileOpen}
           onCloseMobile={() => setIsMobileOpen(false)}
@@ -98,7 +98,7 @@ export function AppShell({ children }: AppShellProps) {
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         />
 
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

@@ -21,194 +21,110 @@ export function TopKpiCards({ kpis }: TopKpiCardsProps) {
   const displacedFamilies = kpis.displaced_families ?? kpis.total_pdf_count ?? 0;
   const avgRandr = kpis.avg_randr_completion_percent ?? 0;
 
+  const cards = [
+    {
+      title: "Total Projects",
+      val: kpis.total_projects,
+      unit: "Major Corridors",
+      sub: "Bharatmala & National Pipeline",
+      icon: Building2,
+      isAcquisition: false,
+    },
+    {
+      title: "Land Proposed",
+      val: kpis.total_land_proposed_acres.toLocaleString(),
+      unit: "Acres",
+      sub: "Sanctioned Alignment Area (Sec 4/11)",
+      icon: MapPin,
+      isAcquisition: false,
+    },
+    {
+      title: "Land Acquired",
+      val: kpis.total_land_acquired_acres.toLocaleString(),
+      unit: "Acres",
+      sub: `${kpis.overall_acquisition_percent}% of Proposed`,
+      icon: CheckCircle2,
+      isAcquisition: true,
+    },
+    {
+      title: "Compensation Assessed",
+      val: `₹${kpis.compensation_assessed_cr.toLocaleString()}`,
+      unit: "Cr",
+      sub: "Sec 26-30 Statutory Awards (100% Solatium)",
+      icon: IndianRupee,
+      isAcquisition: false,
+    },
+    {
+      title: "Compensation Paid",
+      val: `₹${kpis.compensation_disbursed_cr.toLocaleString()}`,
+      unit: "Cr",
+      sub: `${kpis.overall_disbursement_percent}% Disbursed (PFMS DBT)`,
+      icon: IndianRupee,
+      isAcquisition: true,
+    },
+    {
+      title: "Affected Families",
+      val: affectedFamilies.toLocaleString(),
+      unit: "PAFs",
+      sub: "Socio-Economic Surveyed (100% Surveyed)",
+      icon: Users,
+      isAcquisition: false,
+    },
+    {
+      title: "Displaced Families",
+      val: displacedFamilies.toLocaleString(),
+      unit: "Families",
+      sub: "Resettlement Housing (Sec 31 R&R Scheme)",
+      icon: Home,
+      isAcquisition: false,
+    },
+    {
+      title: "R&R Completion",
+      val: `${avgRandr}%`,
+      unit: "Model Colony Dev",
+      sub: `${avgRandr}% Infrastructure Provisioned`,
+      icon: CheckCircle2,
+      isAcquisition: true,
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* 1. Total Projects */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm hover:border-slate-300 transition-all">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Total Projects
-          </span>
-          <div className="h-8 w-8 rounded bg-emerald-50 flex items-center justify-center text-[#138808]">
-            <Building2 className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl sm:text-3xl font-bold font-serif text-slate-900">
-            {kpis.total_projects}
-          </span>
-          <span className="text-xs font-medium text-slate-500">Major Corridors</span>
-        </div>
-        <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
-          <CheckCircle2 className="h-3.5 w-3.5 text-[#138808]" />
-          <span>Bharatmala & National Pipeline</span>
-        </div>
-      </div>
+      {cards.map((c, idx) => {
+        const Icon = c.icon;
+        const isOrange = idx % 2 === 0;
 
-      {/* 2. Land Proposed */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm hover:border-slate-300 transition-all">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Land Proposed
-          </span>
-          <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center text-slate-600">
-            <MapPin className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-bold font-serif text-slate-900">
-            {kpis.total_land_proposed_acres.toLocaleString()}
-          </span>
-          <span className="text-xs font-medium text-slate-500">Acres</span>
-        </div>
-        <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
-          <span>Sanctioned Alignment Area</span>
-          <span className="font-mono text-slate-600 font-medium">Sec 4/11</span>
-        </div>
-      </div>
-
-      {/* 3. Land Acquired */}
-      <div className="bg-white rounded-lg border border-emerald-200/80 bg-emerald-50/20 p-4 shadow-sm hover:border-emerald-300 transition-all">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-emerald-900 uppercase tracking-wider">
-            Land Acquired
-          </span>
-          <div className="h-8 w-8 rounded bg-emerald-100 flex items-center justify-center text-[#138808]">
-            <CheckCircle2 className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-bold font-serif text-[#138808]">
-            {kpis.total_land_acquired_acres.toLocaleString()}
-          </span>
-          <span className="text-xs font-medium text-slate-600">Acres</span>
-        </div>
-        <div className="mt-2.5 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1 text-slate-600 font-medium">
-            <TrendingUp className="h-3.5 w-3.5 text-[#138808]" />
-            <span>Acquisition:</span>
-          </div>
-          <span className="font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded text-[11px]">
-            {kpis.overall_acquisition_percent}% of Proposed
-          </span>
-        </div>
-      </div>
-
-      {/* 4. Compensation Assessed */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm hover:border-slate-300 transition-all">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Compensation Assessed
-          </span>
-          <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center text-slate-600">
-            <IndianRupee className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-bold font-serif text-slate-900">
-            ₹{kpis.compensation_assessed_cr.toLocaleString()}
-          </span>
-          <span className="text-xs font-medium text-slate-500">Cr</span>
-        </div>
-        <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
-          <span>Sec 26-30 Statutory Awards</span>
-          <span className="font-mono text-slate-600 font-medium">100% Solatium</span>
-        </div>
-      </div>
-
-      {/* 5. Compensation Paid */}
-      <div className="bg-white rounded-lg border border-emerald-200/80 bg-emerald-50/20 p-4 shadow-sm hover:border-emerald-300 transition-all">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-emerald-900 uppercase tracking-wider">
-            Compensation Paid
-          </span>
-          <div className="h-8 w-8 rounded bg-emerald-100 flex items-center justify-center text-[#138808]">
-            <IndianRupee className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-bold font-serif text-[#138808]">
-            ₹{kpis.compensation_disbursed_cr.toLocaleString()}
-          </span>
-          <span className="text-xs font-medium text-slate-600">Cr</span>
-        </div>
-        <div className="mt-2.5 flex items-center justify-between text-xs">
-          <span className="text-slate-500">PFMS Direct Benefit</span>
-          <span className="font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded text-[11px]">
-            {kpis.overall_disbursement_percent}% Disbursed
-          </span>
-        </div>
-      </div>
-
-      {/* 6. Affected Families */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm hover:border-slate-300 transition-all">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Affected Families
-          </span>
-          <div className="h-8 w-8 rounded bg-slate-100 flex items-center justify-center text-slate-700">
-            <Users className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl sm:text-3xl font-bold font-serif text-slate-900">
-            {affectedFamilies.toLocaleString()}
-          </span>
-          <span className="text-xs font-medium text-slate-500">PAFs</span>
-        </div>
-        <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
-          <span>Socio-Economic Surveyed</span>
-          <span className="text-emerald-700 font-medium">100% Surveyed</span>
-        </div>
-      </div>
-
-      {/* 7. Displaced Families */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm hover:border-slate-300 transition-all">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Displaced Families
-          </span>
-          <div className="h-8 w-8 rounded bg-amber-50 flex items-center justify-center text-amber-700">
-            <Home className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl sm:text-3xl font-bold font-serif text-slate-900">
-            {displacedFamilies.toLocaleString()}
-          </span>
-          <span className="text-xs font-medium text-slate-500">Families</span>
-        </div>
-        <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
-          <span>Resettlement Housing</span>
-          <span className="font-semibold text-amber-800 bg-amber-100/70 px-1.5 py-0.2 rounded text-[11px]">
-            Sec 31 R&R Scheme
-          </span>
-        </div>
-      </div>
-
-      {/* 8. R&R Completion */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm hover:border-slate-300 transition-all">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            R&R Completion
-          </span>
-          <div className="h-8 w-8 rounded bg-emerald-50 flex items-center justify-center text-[#138808]">
-            <CheckCircle2 className="h-4 w-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl sm:text-3xl font-bold font-serif text-[#138808]">
-            {avgRandr}%
-          </span>
-          <span className="text-xs font-medium text-slate-500">Model Colony Dev</span>
-        </div>
-        <div className="mt-3 w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+        return (
           <div
-            className="bg-[#138808] h-2 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, avgRandr)}%` }}
-          />
-        </div>
-      </div>
+            key={idx}
+            className={`rounded-xl border border-slate-200 p-4 transition-all duration-300 group cursor-pointer shadow-2xs hover:-translate-y-0.5 hover:shadow-md ${
+              isOrange
+                ? "bg-white hover:bg-gradient-to-br hover:from-amber-500/10 hover:via-white hover:to-orange-500/15 hover:border-amber-400"
+                : "bg-white hover:bg-gradient-to-br hover:from-[#138808]/12 hover:via-white hover:to-[#138808]/18 hover:border-[#138808]"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                {c.title}
+              </span>
+              <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 transition-all">
+                <Icon className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-bold font-serif text-slate-900">
+                {c.val}
+              </span>
+              <span className="text-xs font-medium text-slate-500">
+                {c.unit}
+              </span>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
+              <span className="truncate">{c.sub}</span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

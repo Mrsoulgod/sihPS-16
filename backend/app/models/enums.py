@@ -40,6 +40,17 @@ class ComplianceStatus(str, enum.Enum):
     COMPLETED = "COMPLETED"
 
 
+class ProjectProposalStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    UNDER_SCRUTINY = "UNDER_SCRUTINY"
+    REWORK_REQUESTED = "REWORK_REQUESTED"
+    RESUBMITTED = "RESUBMITTED"
+    APPROVED = "APPROVED"
+    ACQUISITION_IN_PROGRESS = "ACQUISITION_IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+
+
 
 class StageStatus(str, enum.Enum):
     PENDING = "PENDING"

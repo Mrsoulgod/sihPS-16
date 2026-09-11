@@ -63,4 +63,93 @@ export interface ProjectDetailResponse {
   outstanding_compensation_cr?: number;
   created_at?: string;
   alignment_geojson?: any;
+  status?: string;
+  proposal_status?: string;
+  rework_remarks?: string;
 }
+
+export interface ProjectProposalCreate {
+  title: string;
+  project_code: string;
+  project_type: string;
+  project_category: string;
+  description: string;
+  objective?: string;
+  sponsoring_ministry: string;
+  estimated_project_cost_cr: number;
+  priority?: string;
+  proposed_start_date?: string;
+  target_completion_date?: string;
+  state_id: string;
+  primary_district_id: string;
+  tehsil_name?: string;
+  villages?: string[];
+  start_location?: string;
+  end_location?: string;
+  project_length_km?: number;
+  total_land_required_acres: number;
+  land_unit?: string;
+  government_land_acres?: number;
+  private_land_acres?: number;
+  other_land_acres?: number;
+  expected_parcel_count?: number;
+  affected_villages_count?: number;
+  proposed_land_remarks?: string;
+  alignment_geojson?: any;
+  preliminary_coordinates?: Array<[number, number]>;
+  document_ids?: string[];
+  is_draft?: boolean;
+}
+
+export interface ProjectDraftUpdate {
+  title?: string;
+  project_type?: string;
+  project_category?: string;
+  description?: string;
+  objective?: string;
+  sponsoring_ministry?: string;
+  estimated_project_cost_cr?: number;
+  priority?: string;
+  proposed_start_date?: string;
+  target_completion_date?: string;
+  state_id?: string;
+  primary_district_id?: string;
+  tehsil_name?: string;
+  villages?: string[];
+  start_location?: string;
+  end_location?: string;
+  project_length_km?: number;
+  total_land_required_acres?: number;
+  land_unit?: string;
+  government_land_acres?: number;
+  private_land_acres?: number;
+  other_land_acres?: number;
+  expected_parcel_count?: number;
+  affected_villages_count?: number;
+  proposed_land_remarks?: string;
+  alignment_geojson?: any;
+  preliminary_coordinates?: Array<[number, number]>;
+  document_ids?: string[];
+}
+
+export interface ProjectSubmitRequest {
+  submission_remarks?: string;
+}
+
+export interface ProjectResubmitRequest {
+  response_remarks: string;
+  corrections_summary: string;
+  document_ids?: string[];
+}
+
+export interface SurveyRequestCreate {
+  survey_type: 'LAND_SURVEY' | 'FIELD_VERIFICATION' | 'BOUNDARY_CLARIFICATION' | 'SITE_VERIFICATION' | 'ADDITIONAL_FIELD_INFO';
+  title: string;
+  justification: string;
+  target_district_id: string;
+  target_tehsil?: string;
+  target_villages?: string[];
+  khasra_numbers?: string[];
+  coordinates_geojson?: any;
+}
+

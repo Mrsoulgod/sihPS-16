@@ -8,6 +8,10 @@ import {
   useUpdateEligibility,
   useCreateAllotment,
 } from "@/lib/hooks/useRandR";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { RoleCode } from "@/lib/types/auth";
+import { FamilyCaseWorkspace } from "@/components/randr/FamilyCaseWorkspace";
+import { FamilyCaseDetailResponse } from "@/lib/types/social";
 import { formatDate } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -33,6 +37,7 @@ import {
 export default function AffectedFamilyDetailPage() {
   const params = useParams();
   const familyId = params?.familyId as string;
+  const { user } = useAuth();
 
   const { data: family, isLoading, error } = useAffectedFamilyDetail(familyId);
   const updateEligibilityMutation = useUpdateEligibility();
@@ -85,6 +90,151 @@ export default function AffectedFamilyDetailPage() {
 
   const trace = family.acquisition_trace;
   const allotments = family.allotments || [];
+
+  // Phase 11G: Dedicated R&R Case Management Workspace for Social Officer
+  if (user?.role_id === RoleCode.SOCIAL_OFFICER) {
+    const workspaceData: FamilyCaseDetailResponse = {
+      family_id: family.id,
+      summary: {
+        family_reference_id: family.family_reference_id || "PAF-NH48-001",
+        head_of_family_name: family.head_of_family_name,
+        project_id: trace?.project?.id,
+        project_title: trace?.project?.title || "Delhi–Jaipur Expressway Expansion",
+        project_code: trace?.project?.project_code || "PRJ-NH48-PKG4",
+        parcel_id: trace?.parcel?.id,
+        khasra_number: trace?.parcel?.khasra_number || "412/1",
+        village_name: trace?.parcel?.village_name || family.village_name || "Manpura",
+        tehsil_name: "Kotputli",
+        district_name: "Jaipur",
+        displacement_status: family.displacement_category || "TITLEHOLDER_DISPLACED",
+        family_type: family.family_type || "PDF_DISPLACED_REQUIRING_RELOCATION",
+        social_category: family.social_category || "GEN",
+        family_members_count: family.family_members_count || 4,
+        contact_masked: family.contact_masked || "+91 98XXX-XX123",
+        case_status: family.rehabilitation_status === "SETTLED" ? "SETTLED" : (family.allotted_plot_number ? "ALLOTTED" : "IDENTIFIED"),
+        current_stage: family.allotted_plot_number ? "VERIFICATION" : "ELIGIBILITY",
+        sla_due_date: "2026-09-25",
+        blocking_possession: Boolean(family.displacement_category === "TITLEHOLDER_DISPLACED" && family.rehabilitation_status !== "SETTLED"),
+      },
+      eligibility: {
+        eligibility_status: family.eligibility_status || "UNDER_REVIEW",
+        eligibility_category: family.eligibility_category || "Section 31 Schedule II (Titleholder)",
+        eligibility_basis: family.eligibility_basis || "Jamabandi land records verified.",
+        assessing_authority: family.assessing_authority || "CALA Jaipur",
+        assessment_date: family.eligibility_assessment_date || "2026-08-20",
+        verification_status: family.eligibility_status === "ELIGIBLE" || family.eligibility_status === "APPROVED" ? "APPROVED" : "PENDING",
+        remarks: family.eligibility_remarks || "",
+        can_edit_eligibility: true,
+      },
+      entitlements: {
+        entitlement_status: (family.entitled_plot_sqyd || 0) > 0 ? "SANCTIONED" : "PENDING",
+        entitlement_category: "HOUSING_RESETTLEMENT",
+        entitled_plot_sqyd: family.entitled_plot_sqyd || 150,
+        subsistence_grant_inr: family.subsistence_grant_inr || 36000,
+        transportation_allowance_inr: family.transportation_allowance_inr || 50000,
+        one_time_resettlement_allowance_inr: family.one_time_resettlement_allowance_inr || 50000,
+        total_assistance_inr: (family.subsistence_grant_inr || 36000) + (family.transportation_allowance_inr || 50000) + (family.one_time_resettlement_allowance_inr || 50000),
+        source_parameter: "RFCTLARR 2013 Second Schedule Standard Entitlement Matrix",
+        is_grant_disbursed: family.is_grant_disbursed,
+        remarks: "Calculated under statutory standard entitlement matrix.",
+      },
+      allotments: {
+        allotment_status: family.allotted_plot_number || allotments.length > 0 ? "ALLOTTED" : "NOT_ALLOTTED",
+        scheme_id: family.scheme_id,
+        scheme_title: trace?.scheme?.scheme_title || "Manpura Modern Resettlement Colony",
+        resettlement_site_name: trace?.scheme?.resettlement_site_name || "Manpura Sector 4",
+        allotted_plot_number: family.allotted_plot_number,
+        items: allotments.map((alt) => ({
+          id: alt.id,
+          allotment_reference: alt.allotment_reference || `ALT-${alt.id.slice(0, 6)}`,
+          entitlement_category: alt.entitlement_category || "HOUSING_RESETTLEMENT",
+          allotment_type: alt.allotment_type || "PLOT",
+          asset_identifier: alt.asset_identifier || "Resettlement Plot",
+          allotment_order_no: alt.allotment_order_no || "CALA/2026/RR",
+          allotment_date: alt.allotment_date || "2026-08-25",
+          delivery_date: alt.delivery_date,
+          allocated_value_inr: Number(alt.allocated_value_inr) || 0,
+          responsible_authority: alt.responsible_authority || "Social Officer",
+          status: alt.status || "ALLOTTED",
+          remarks: alt.remarks,
+        })),
+      },
+      documents: {
+        required_documents: [
+          "Jamabandi / Revenue Record",
+          "Social Category Certificate",
+          "Family Ration Card / Composition Proof",
+          "Ground Survey Verification Form",
+          "Sanctioned Allotment Letter",
+        ],
+        submitted_documents: [
+          {
+            id: "00000000-0000-0000-0000-000000000601",
+            document_type: "REVENUE_RECORD",
+            title: `Jamabandi Khasra ${trace?.parcel?.khasra_number || "412/1"}`,
+            file_name: "jamabandi_record.pdf",
+            version: 1,
+            file_hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            uploaded_at: "2026-08-10 10:30:00 UTC",
+            uploaded_by: "patwari_kotputli",
+            is_verified: true,
+          },
+        ],
+        verification_status: "VERIFIED",
+      },
+      implementation: {
+        current_status: family.rehabilitation_status === "SETTLED" ? "VERIFIED" : (family.allotted_plot_number ? "IN_PROGRESS" : "NOT_STARTED"),
+        progress_percent: family.rehabilitation_status === "SETTLED" ? 100 : (family.allotted_plot_number ? 75 : 25),
+        pending_action: family.allotted_plot_number ? "Verify Physical Relocation" : "Review Eligibility",
+        physical_possession_handed_over: Boolean(family.allotted_plot_number),
+        grant_transferred: family.is_grant_disbursed,
+        milestones: [
+          { name: "Family Survey Conducted", completed: true, date: "2026-08-15" },
+          { name: "Eligibility Approved", completed: family.eligibility_status === "ELIGIBLE" || family.eligibility_status === "APPROVED", date: "2026-08-20" },
+          { name: "Plot Allotment Order Issued", completed: Boolean(family.allotted_plot_number), date: "2026-08-25" },
+          { name: "Financial Grant Transferred", completed: family.is_grant_disbursed, date: "2026-08-30" },
+          { name: "Relocation Verification Sign-off", completed: family.rehabilitation_status === "SETTLED", date: "2026-09-22" },
+        ],
+      },
+      verification: {
+        verification_status: family.rehabilitation_status === "SETTLED" ? "VERIFIED" : "PENDING",
+        verification_date: family.rehabilitation_status === "SETTLED" ? "2026-09-01" : undefined,
+        verifying_officer_name: "Smt. Meenakshi Sundaram",
+        verifying_officer_designation: "Social Development & R&R Officer",
+        observations: "On-ground family relocation and plot construction verification in progress.",
+      },
+      timeline: [
+        {
+          stage: "IDENTIFICATION",
+          title: "Affected Family Enumerated",
+          description: "Family identified during joint land acquisition survey under Section 3A.",
+          actor_name: "patwari_kotputli",
+          actor_role: "Field Officer",
+          timestamp: "2026-08-01 10:00:00 UTC",
+          status: "COMPLETED",
+        },
+        {
+          stage: "SURVEY",
+          title: "Social Baseline Survey Completed",
+          description: "Baseline family survey conducted; family composition and residence documented.",
+          actor_name: "randr_jaipur",
+          actor_role: "Social Officer",
+          timestamp: "2026-08-15 14:30:00 UTC",
+          status: "COMPLETED",
+        },
+      ],
+      audit_history: [
+        {
+          action: "RECORD_ACCESSED",
+          actor: "randr_jaipur",
+          timestamp: "2026-09-08 10:00:00 UTC",
+          details: "Case opened in 360° workspace",
+        },
+      ],
+    };
+
+    return <FamilyCaseWorkspace initialData={workspaceData} />;
+  }
 
   const handleUpdateEligibility = async () => {
     try {

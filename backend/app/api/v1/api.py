@@ -21,6 +21,8 @@ from app.api.v1.endpoints import (
     documents,
     master_data,
     field,
+    social,
+    action_center,
 )
 
 api_router = APIRouter()
@@ -52,11 +54,15 @@ api_router.include_router(risk.router, prefix="/risk", tags=["Predictive Risk In
 api_router.include_router(risk.router, prefix="/analytics/risk", tags=["Predictive Risk Intelligence (Alias)"])
 api_router.include_router(reports.router, prefix="/reports", tags=["Statutory MIS Reports"])
 
-# SIH Gap-Closure: Government Integrations, Document Versioning, Master Data, and Field Mobile Workflow
+# SIH Gap-Closure: Government Integrations, Document Versioning, Master Data, Field Mobile, Social & Action Centre
 api_router.include_router(integrations.router, prefix="/integrations", tags=["Government Integration Gateway (Sandbox)"])
 api_router.include_router(documents.router, prefix="/documents", tags=["Document Repository & Version Control"])
 api_router.include_router(master_data.router, prefix="/master-data", tags=["Master Data & Taxonomy Standardization"])
 api_router.include_router(field.router, prefix="/field", tags=["Field Officer Mobile Survey Workflow"])
+api_router.include_router(social.router, prefix="/social", tags=["Social / R&R Officer Case Management"])
+api_router.include_router(action_center.router, prefix="/action-centre", tags=["Action Centre & Work Execution"])
+api_router.include_router(action_center.router, prefix="/actions", tags=["Action Centre (Alias)"])
+
 
 
 

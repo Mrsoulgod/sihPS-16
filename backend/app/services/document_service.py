@@ -14,6 +14,7 @@ from app.schemas.documents import (
     DocumentVersionItem,
     DocumentDetailResponse,
     DocumentUploadVersionRequest,
+    DocumentCreateRequest,
     DocumentHashVerificationResponse,
 )
 
@@ -264,3 +265,50 @@ class DocumentService:
             verification_timestamp=now_str,
             status_message="Document cryptographic integrity verified. File matches exact digital signature at upload.",
         )
+
+    @classmethod
+    async def create_document(
+        cls,
+        db: AsyncSession,
+        req: DocumentCreateRequest,
+        current_user: User,
+    ) -> DocumentDetailResponse:
+        """Upload and store a new statutory document in the repository with SHA-256 hash."""
+        new_doc = Document(
+            id=uuid.uuid4(),
+            title=req.title or req.file_name,
+            entity_type=req.entity_type,
+            entity_id=req.entity_id,
+            document_type=req.document_type,
+            file_name=req.file_name,
+            file_path=f"/storage/documents/{req.file_name}",
+            file_size_bytes=req.file_size_bytes,
+            mime_type=req.mime_type,
+            sha256_hash=req.sha256_hash,
+            uploaded_by_user_id=current_user.id,
+            verification_status="VERIFIED",
+            version=1,
+            parent_document_id=None,
+            version_notes=req.version_notes or "Initial statutory document upload",
+            is_current_version=True,
+        )
+        db.add(new_doc)
+
+        audit = AuditLog(
+            user_id=current_user.id,
+            action="DOCUMENT_UPLOADED",
+            entity_name="Document",
+            entity_id=str(new_doc.id),
+            new_values={
+                "title": new_doc.title,
+                "file_name": new_doc.file_name,
+                "document_type": new_doc.document_type,
+                "entity_type": new_doc.entity_type,
+                "entity_id": str(new_doc.entity_id),
+                "sha256_hash": new_doc.sha256_hash,
+            },
+        )
+        db.add(audit)
+        await db.commit()
+
+        return await cls.get_document_detail(db, new_doc.id, current_user)

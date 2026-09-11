@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { ProjectWorkflowTimelineResponse, AllowedAction } from "@/lib/types/workflow";
 import { useTransitionStage } from "@/lib/hooks/useWorkflow";
-import { X, CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import { X, CheckCircle2, AlertTriangle, ArrowRight, Loader2, Check } from "lucide-react";
 
 interface StageTransitionModalProps {
   timeline: ProjectWorkflowTimelineResponse;
@@ -20,6 +20,7 @@ export function StageTransitionModal({ timeline, isOpen, onClose }: StageTransit
   const [remarks, setRemarks] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
   if (!isOpen) return null;
 
@@ -41,7 +42,11 @@ export function StageTransitionModal({ timeline, isOpen, onClose }: StageTransit
         remarks: remarks.trim() || undefined,
         rejection_reason: selectedAction === "REJECTED" ? rejectionReason.trim() : undefined,
       });
-      onClose();
+      setIsSuccess(true);
+      setTimeout(() => {
+        setIsSuccess(false);
+        onClose();
+      }, 900);
     } catch (err: any) {
       setErrorMessage(err?.response?.data?.error?.message || err?.message || "Failed to execute stage transition.");
     }
@@ -56,7 +61,7 @@ export function StageTransitionModal({ timeline, isOpen, onClose }: StageTransit
             <h3 className="text-base font-bold text-slate-900">
               Statutory Stage Transition
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 font-mono">
               {timeline.project_code} • Current: <strong className="text-slate-700">{timeline.current_stage}</strong>
             </p>
           </div>
@@ -75,6 +80,13 @@ export function StageTransitionModal({ timeline, isOpen, onClose }: StageTransit
             <div className="p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {isSuccess && (
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center gap-2 font-bold animate-in fade-in">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>Stage transition successfully executed and recorded in statutory audit trail.</span>
             </div>
           )}
 
@@ -158,10 +170,25 @@ export function StageTransitionModal({ timeline, isOpen, onClose }: StageTransit
             </button>
             <button
               type="submit"
-              disabled={transitionMutation.isPending}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded bg-[#138808] hover:bg-emerald-700 text-white text-xs font-medium shadow transition-colors disabled:opacity-50"
+              disabled={transitionMutation.isPending || isSuccess}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded bg-[#138808] hover:bg-emerald-700 text-white text-xs font-semibold shadow transition-colors disabled:opacity-50"
             >
-              {transitionMutation.isPending ? "Executing..." : "Confirm & Apply Transition"}
+              {isSuccess ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Transition Applied</span>
+                </>
+              ) : transitionMutation.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Applying Transition...</span>
+                </>
+              ) : (
+                <>
+                  <span>Confirm & Apply Transition</span>
+                  <ArrowRight className="h-3 w-3" />
+                </>
+              )}
             </button>
           </div>
         </form>

@@ -61,9 +61,10 @@ async def get_current_user(
                     )
                     .where(or_(User.username == identifier, User.email == identifier))
                 )
-                res = await asyncio.wait_for(db.execute(stmt), timeout=2.0)
+                res = await db.execute(stmt)
                 user = res.scalar_one_or_none()
             except Exception:
+                await db.rollback()
                 pass
     else:
         # 2. Decode JWT access token
@@ -94,9 +95,10 @@ async def get_current_user(
                 )
                 .where(User.id == user_uuid)
             )
-            result = await asyncio.wait_for(db.execute(stmt), timeout=2.0)
+            result = await db.execute(stmt)
             user = result.scalar_one_or_none()
         except Exception:
+            await db.rollback()
             user = None
 
 
