@@ -31,7 +31,7 @@ export interface LeafletParcelMapProps {
 }
 
 // Built-in benchmark fallback GIS data (Rajasthan Jaipur-Kotputli corridor)
-const DEFAULT_FALLBACK_GIS: GisGeoJsonFeatureCollection = {
+export const DEFAULT_FALLBACK_GIS: GisGeoJsonFeatureCollection = {
   type: "FeatureCollection",
   features: [
     {
@@ -189,7 +189,7 @@ export function LeafletParcelMap({
   selectedParcelId,
   onSelectParcel,
   onParcelClick,
-  height = "460px",
+  height = "520px",
   title,
   showControls = true,
 }: LeafletParcelMapProps) {
@@ -340,8 +340,25 @@ export function LeafletParcelMap({
       }
     }
 
+    // Force map size recalculation in case container expanded after render
+    const t1 = setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+    const t2 = setTimeout(() => {
+      map.invalidateSize();
+    }, 600);
+
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
     return () => {
-      // do not remove map on simple filter re-render
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener("resize", handleResize);
     };
   }, [effectiveData, selectedParcelId, effectiveSelect, statusFilter, searchKhasra]);
 
@@ -381,7 +398,14 @@ export function LeafletParcelMap({
   };
 
   return (
-    <div className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-900">
+    <div
+      className="relative rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-900 w-full"
+      style={{
+        height: height || "520px",
+        minHeight: "450px",
+        position: "relative",
+      }}
+    >
       {/* Top Header & Interactive Ribbon */}
       {showControls && (
         <div className="absolute top-3 left-3 right-3 z-[400] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
@@ -451,7 +475,10 @@ export function LeafletParcelMap({
       )}
 
       {/* Map Canvas */}
-      <div ref={mapContainerRef} style={{ height, width: "100%" }} />
+      <div
+        ref={mapContainerRef}
+        style={{ height: "100%", width: "100%", minHeight: "450px" }}
+      />
 
       {/* Bottom Status Filter & Legend */}
       <div className="absolute bottom-3 left-3 right-3 z-[400] flex flex-wrap items-center justify-between gap-2 pointer-events-none">

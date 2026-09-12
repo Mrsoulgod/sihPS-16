@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useProjects } from "@/lib/hooks/useProjects";
 import { useProjectParcelsGis } from "@/lib/hooks/useParcels";
+import { MOCK_PROJECTS } from "@/lib/api/mock_fallback";
+import { DEFAULT_FALLBACK_GIS } from "@/components/gis/LeafletParcelMap";
 import {
   MapPin,
   Building2,
@@ -17,7 +19,7 @@ const LeafletParcelMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full min-h-[500px] w-full rounded-xl bg-gray-100 flex items-center justify-center text-xs text-gray-400 animate-pulse border border-gray-200">
+      <div className="h-[600px] min-h-[500px] w-full rounded-xl bg-slate-900 flex items-center justify-center text-xs text-slate-400 animate-pulse border border-slate-700">
         Loading GIS Spatial Cadastre Engine...
       </div>
     ),
@@ -27,17 +29,22 @@ const LeafletParcelMap = dynamic(
 export default function GisMapPage() {
   const router = useRouter();
   const { data: projectList } = useProjects();
-  const projects = projectList || [];
+  const projects = (projectList && projectList.length > 0) ? projectList : MOCK_PROJECTS;
 
   // Default to first project (Delhi-Jaipur Expressway) if available
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
   const activeProjectId =
-    selectedProjectId || (projects.length > 0 ? projects[0].id : "");
+    selectedProjectId || (projects.length > 0 ? projects[0].id : "PRJ-NH48-PKG4");
 
   const { data: gisData } = useProjectParcelsGis(activeProjectId);
 
-  const features = gisData?.features || [];
+  const effectiveGis =
+    gisData && gisData.features && gisData.features.length > 0
+      ? gisData
+      : DEFAULT_FALLBACK_GIS;
+
+  const features = effectiveGis.features || [];
   const totalParcels = features.length;
   const acquiredParcels = features.filter(
     (f) =>
@@ -47,7 +54,9 @@ export default function GisMapPage() {
   const underVerificationParcels = features.filter(
     (f) =>
       f.properties.acquisition_status === "VERIFICATION_PENDING" ||
-      f.properties.verification_status === "SURVEYED"
+      f.properties.acquisition_status === "SECTION_11_NOTIFIED" ||
+      f.properties.verification_status === "SURVEYED" ||
+      f.properties.verification_status === "IN_PROGRESS"
   ).length;
   const disputedParcels = features.filter((f) => f.properties.is_disputed).length;
 
@@ -77,14 +86,14 @@ export default function GisMapPage() {
           >
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.project_code} — {p.title.slice(0, 36)}...
+                {p.project_code} — {p.title.slice(0, 42)}...
               </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Metrics & Legend Ribbon */}
+      {/* Metrics Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm flex items-center justify-between">
           <div>
@@ -104,7 +113,7 @@ export default function GisMapPage() {
 
         <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[10px] uppercase font-bold text-amber-500 block">Under Verification</span>
+            <span className="text-[10px] uppercase font-bold text-amber-500 block">Under Verification / Notified</span>
             <p className="text-base font-bold text-amber-600">{underVerificationParcels}</p>
           </div>
           <div className="h-3.5 w-3.5 rounded bg-amber-500" />
@@ -120,44 +129,17 @@ export default function GisMapPage() {
       </div>
 
       {/* Interactive Map Canvas */}
-      <div className="relative rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden h-[calc(100vh-17rem)] min-h-[500px]">
+      <div className="relative rounded-xl border border-gray-200 bg-slate-900 shadow-sm overflow-hidden h-[620px] min-h-[500px]">
         <LeafletParcelMap
-          geoJson={gisData}
+          geoJson={effectiveGis}
           height="100%"
+          title="National Cadastral Map"
           onParcelClick={(parcelId: string) => {
             router.push(`/land-parcels/${parcelId}`);
           }}
         />
-
-        {/* Floating Map Legend Overlay */}
-        <div className="absolute bottom-4 left-4 z-[1000] rounded-lg bg-white/95 backdrop-blur-sm p-3 shadow-lg border border-gray-200 text-xs space-y-2 pointer-events-auto">
-          <div className="font-bold text-[11px] text-gray-800 uppercase tracking-wider">
-            Cadastre Legend
-          </div>
-          <div className="space-y-1 text-[11px] text-gray-600">
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded bg-[#16a34a] border border-green-700 shrink-0" />
-              <span>Acquired / Completed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded bg-[#22c55e] border border-green-600 shrink-0" />
-              <span>Proposed / Active Demarcation</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded bg-[#d97706] border border-amber-600 shrink-0" />
-              <span>Under Field Verification</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded bg-[#dc2626] border border-red-700 shrink-0" />
-              <span>Disputed / High Sensitivity</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded bg-[#94a3b8] border border-slate-500 shrink-0" />
-              <span>Inactive / Not Started</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
 }
+
