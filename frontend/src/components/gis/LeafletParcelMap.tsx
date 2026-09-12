@@ -78,8 +78,8 @@ export function LeafletParcelMap({
   const baseTileLayerRef = useRef<any>(null);
   const measureLayerGroupRef = useRef<any>(null);
 
-  // UI State
-  const [activeBaseMap, setActiveBaseMap] = useState<BaseMapType>("STREET");
+  // UI State - Default to SATELLITE view as requested
+  const [activeBaseMap, setActiveBaseMap] = useState<BaseMapType>("SATELLITE");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [searchKhasra, setSearchKhasra] = useState<string>("");
   const [selectedParcel, setSelectedParcel] = useState<any>(null);
@@ -178,17 +178,24 @@ export function LeafletParcelMap({
       // Add Zoom Control top-right
       L.control.zoom({ position: "topright" }).addTo(map);
 
-      // Base tile layer
-      const streetLayer = L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      // Default to high-resolution Esri World Imagery Satellite Tiles + Reference Labels
+      const satelliteTiles = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | NLAMS PostGIS Cadastre',
+          attribution: "Tiles &copy; Esri &mdash; High-Resolution Satellite & Aerial Imagery",
           maxZoom: 19,
         }
-      ).addTo(map);
+      );
+      const labelTiles = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: "Labels &copy; Esri",
+          maxZoom: 19,
+        }
+      );
+      const satelliteGroup = L.layerGroup([satelliteTiles, labelTiles]).addTo(map);
 
-      baseTileLayerRef.current = streetLayer;
+      baseTileLayerRef.current = satelliteGroup;
 
       // Layer group for measurements
       measureLayerGroupRef.current = L.layerGroup().addTo(map);
@@ -513,22 +520,43 @@ export function LeafletParcelMap({
       map.removeLayer(baseTileLayerRef.current);
     }
 
-    let tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-    let attr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-
     if (type === "SATELLITE") {
-      tileUrl = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-      attr = "Tiles &copy; Esri &mdash; High-Resolution Satellite & Aerial Imagery";
+      const satelliteTiles = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: "Tiles &copy; Esri &mdash; High-Resolution Satellite & Aerial Imagery",
+          maxZoom: 19,
+        }
+      );
+      const labelTiles = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: "Labels &copy; Esri",
+          maxZoom: 19,
+        }
+      );
+      const satelliteGroup = L.layerGroup([satelliteTiles, labelTiles]).addTo(map);
+      baseTileLayerRef.current = satelliteGroup;
+    } else if (type === "STREET") {
+      const streetLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(map);
+      baseTileLayerRef.current = streetLayer;
     } else if (type === "TOPO") {
-      tileUrl = "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png";
-      attr = 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, SRTM | Style: OpenTopoMap';
+      const topoLayer = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, SRTM | Style: OpenTopoMap',
+        maxZoom: 19,
+      }).addTo(map);
+      baseTileLayerRef.current = topoLayer;
     } else if (type === "DARK") {
-      tileUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-      attr = '&copy; <a href="https://carto.com/attributions">CARTO</a>';
+      const darkLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19,
+      }).addTo(map);
+      baseTileLayerRef.current = darkLayer;
     }
 
-    const newLayer = L.tileLayer(tileUrl, { attribution: attr, maxZoom: 19 }).addTo(map);
-    baseTileLayerRef.current = newLayer;
     setActiveBaseMap(type);
   };
 
@@ -746,48 +774,67 @@ export function LeafletParcelMap({
           </div>
 
           {/* Right: Basemap Switcher & Actions */}
-          <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1 rounded-lg shadow-md text-xs">
-            <button
-              type="button"
-              onClick={() => switchBaseMap("STREET")}
-              className={`px-2 py-1 rounded font-semibold text-[11px] transition-colors ${
-                activeBaseMap === "STREET" ? "bg-[#138808] text-white font-bold" : "text-slate-300 hover:bg-slate-800"
-              }`}
-            >
-              Street
-            </button>
-            <button
-              type="button"
-              onClick={() => switchBaseMap("SATELLITE")}
-              className={`px-2 py-1 rounded font-semibold text-[11px] transition-colors ${
-                activeBaseMap === "SATELLITE" ? "bg-[#138808] text-white font-bold" : "text-slate-300 hover:bg-slate-800"
-              }`}
-            >
-              Satellite
-            </button>
-            <button
-              type="button"
-              onClick={() => switchBaseMap("TOPO")}
-              className={`px-2 py-1 rounded font-semibold text-[11px] transition-colors ${
-                activeBaseMap === "TOPO" ? "bg-[#138808] text-white font-bold" : "text-slate-300 hover:bg-slate-800"
-              }`}
-            >
-              Topo
-            </button>
-            <button
-              type="button"
-              onClick={() => switchBaseMap("DARK")}
-              className={`px-2 py-1 rounded font-semibold text-[11px] transition-colors ${
-                activeBaseMap === "DARK" ? "bg-[#138808] text-white font-bold" : "text-slate-300 hover:bg-slate-800"
-              }`}
-            >
-              Dark
-            </button>
-            <div className="h-3.5 w-px bg-slate-700 mx-0.5" />
+          <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-900/95 backdrop-blur-md border border-slate-700 p-1 rounded-xl shadow-lg text-xs">
+            <div className="flex items-center bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60">
+              <button
+                type="button"
+                onClick={() => switchBaseMap("SATELLITE")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] transition-all ${
+                  activeBaseMap === "SATELLITE"
+                    ? "bg-[#138808] text-white shadow-sm ring-1 ring-emerald-400"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
+                }`}
+                title="High-Resolution Satellite Imagery + Labels"
+              >
+                <Globe className="h-3 w-3" />
+                <span>Satellite</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => switchBaseMap("STREET")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] transition-all ${
+                  activeBaseMap === "STREET"
+                    ? "bg-[#138808] text-white shadow-sm ring-1 ring-emerald-400"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
+                }`}
+                title="OpenStreetMap Standard Street Layer"
+              >
+                <MapIcon className="h-3 w-3" />
+                <span>Street</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => switchBaseMap("TOPO")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] transition-all ${
+                  activeBaseMap === "TOPO"
+                    ? "bg-[#138808] text-white shadow-sm ring-1 ring-emerald-400"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
+                }`}
+                title="Topographic Elevation Contours"
+              >
+                <Compass className="h-3 w-3" />
+                <span>Topo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => switchBaseMap("DARK")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] transition-all ${
+                  activeBaseMap === "DARK"
+                    ? "bg-[#138808] text-white shadow-sm ring-1 ring-emerald-400"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
+                }`}
+                title="Dark Matter Canvas"
+              >
+                <span>Dark</span>
+              </button>
+            </div>
+
+            <div className="h-4 w-px bg-slate-700 mx-0.5" />
+
             <button
               type="button"
               onClick={handleRecenter}
-              className="p-1 rounded text-slate-300 hover:bg-slate-800"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/60"
               title="Fit to project corridor bounds"
             >
               <Maximize2 className="h-3.5 w-3.5" />
@@ -795,8 +842,8 @@ export function LeafletParcelMap({
             <button
               type="button"
               onClick={handleExportGeoJson}
-              className="p-1 rounded text-slate-300 hover:bg-slate-800"
-              title="Export GeoJSON"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 transition-colors border border-slate-700/60"
+              title="Export Corridor GeoJSON"
             >
               <Download className="h-3.5 w-3.5" />
             </button>
