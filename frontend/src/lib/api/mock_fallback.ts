@@ -1748,13 +1748,17 @@ export function handleMockApiRequest<T>(
 
   // 4. Land Parcels & GIS
   if (clean.startsWith("/gis") || clean.startsWith("/parcels/gis")) {
-    const projMatch = clean.match(/\/projects\/([^\/]+)/);
-    const projectId = projMatch ? projMatch[1] : undefined;
-    const gisData = getGisGeoJsonByProjectId(projectId) || MOCK_GEOJSON_FEATURES;
-
+    let dataset = MOCK_GEOJSON_FEATURES;
+    if (clean.includes("PRJ-DFCC") || clean.includes("DFCC")) {
+      dataset = getGisGeoJsonByProjectId("PRJ-DFCC-W03");
+    } else if (clean.includes("PRJ-METRO") || clean.includes("METRO")) {
+      dataset = getGisGeoJsonByProjectId("PRJ-METRO-PH2");
+    } else {
+      dataset = getGisGeoJsonByProjectId("PRJ-NH48-PKG4");
+    }
     return {
       success: true,
-      data: gisData as unknown as T,
+      data: dataset as unknown as T,
       message: "GIS spatial features retrieved.",
       metadata: { timestamp: new Date().toISOString(), request_id: `mock-gis-${Date.now()}` },
     };

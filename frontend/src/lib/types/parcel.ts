@@ -110,7 +110,7 @@ export interface GisGeoJsonFeature {
   type: "Feature";
   id: string;
   geometry: {
-    type: "Polygon" | "LineString" | "MultiPolygon" | "Point";
+    type: "Polygon" | "LineString" | "MultiPolygon";
     coordinates: any;
   };
   properties: {
@@ -125,6 +125,7 @@ export interface GisGeoJsonFeature {
     total_area_acres: number;
     acquired_area_acres: number;
     area_sqm?: number;
+    area_bigha?: number;
     land_type: string;
     acquisition_status: string;
     status_label: string;
@@ -145,7 +146,6 @@ export interface GisGeoJsonFeature {
     fillOpacity: number;
     weight: number;
     layer_type?: "PARCEL" | "ROW_CENTERLINE" | "ROW_BUFFER" | "VILLAGE_BOUNDARY" | "ECO_SENSITIVE";
-    chainage_km?: string;
   };
 }
 
@@ -164,4 +164,3 @@ export interface GisGeoJsonFeatureCollection {
     epsg?: string;
   };
 }
-
