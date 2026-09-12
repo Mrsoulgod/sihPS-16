@@ -175,8 +175,8 @@ export function LeafletParcelMap({
         scrollWheelZoom: true,
       });
 
-      // Add Zoom Control top-right
-      L.control.zoom({ position: "topright" }).addTo(map);
+      // Add Zoom Control bottom-right so it NEVER overlaps with the top toolbar
+      L.control.zoom({ position: "bottomright" }).addTo(map);
 
       // Default to high-resolution Esri World Imagery Satellite Tiles + Reference Labels
       const satelliteTiles = L.tileLayer(
@@ -593,37 +593,35 @@ export function LeafletParcelMap({
       className="relative rounded-xl overflow-hidden border border-slate-700/60 shadow-lg bg-slate-950 w-full"
       style={{
         height: height || "600px",
-        minHeight: "500px",
+        minHeight: height?.includes("px") && parseInt(height) < 450 ? height : "360px",
         position: "relative",
       }}
     >
-      {/* 1. Top HUD Bar & Tools */}
+      {/* 1. Top HUD Bar & Tools - Fixed z-[1000] so it is ALWAYS visible and never hidden by tiles or controls */}
       {showControls && (
-        <div className="absolute top-3 left-3 right-3 z-[400] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-          {/* Left Pill: Corridor Layer Badge & Search */}
-          <div className="flex items-center gap-2 pointer-events-auto flex-wrap">
-            <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-lg shadow-md flex items-center gap-2 text-xs text-white">
+        <div className="absolute top-2.5 left-2.5 right-2.5 z-[1000] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+          {/* Left: Corridor Layer Badge, Quick Search, Layers & Measurement */}
+          <div className="flex items-center gap-1.5 pointer-events-auto flex-wrap">
+            <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/90 px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-2 text-xs text-white">
               <Layers className="h-4 w-4 text-[#138808]" />
-              <span className="font-bold">
-                {title || effectiveData.metadata?.project_title?.slice(0, 32) || "Cadastral Layer"}
+              <span className="font-bold whitespace-nowrap">
+                {title || effectiveData.metadata?.project_title?.slice(0, 28) || "Cadastral Layer"}
               </span>
-              <span className="text-slate-500">|</span>
-              <span className="text-[10px] text-slate-400 font-mono">
+              <span className="text-slate-600">|</span>
+              <span className="text-[10px] text-emerald-400 font-mono whitespace-nowrap">
                 {effectiveData.features.filter((f) => f.properties?.layer_type === "PARCEL" || !f.properties?.layer_type).length} Parcels
               </span>
-              <span className="text-slate-500">|</span>
-              <span className="text-[10px] text-emerald-400 font-mono">EPSG:4326 PostGIS</span>
             </div>
 
             {/* Quick Search */}
-            <div className="relative hidden md:block">
+            <div className="relative hidden xl:block">
               <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search Khasra / ULPIN / Owner..."
+                placeholder="Search Khasra / ULPIN..."
                 value={searchKhasra}
                 onChange={(e) => setSearchKhasra(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-lg bg-slate-900/90 backdrop-blur-md border border-slate-700/80 text-xs text-white placeholder-slate-400 shadow-md focus:outline-none focus:ring-2 focus:ring-[#138808] w-56"
+                className="pl-8 pr-7 py-1.5 rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700/90 text-xs text-white placeholder-slate-400 shadow-lg focus:outline-none focus:ring-2 focus:ring-[#138808] w-48"
               />
               {searchKhasra && (
                 <button
@@ -636,27 +634,30 @@ export function LeafletParcelMap({
               )}
             </div>
 
-            {/* Layer Visibility Dropdown Toggle */}
+            {/* Layer Visibility Toggle */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowLayerMenu(!showLayerMenu)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold backdrop-blur-md border transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold backdrop-blur-md border shadow-lg transition-all ${
                   showLayerMenu
-                    ? "bg-[#138808] text-white border-green-600"
-                    : "bg-slate-900/90 text-slate-200 border-slate-700 hover:bg-slate-800"
+                    ? "bg-[#138808] text-white border-green-500 shadow-emerald-950/50"
+                    : "bg-slate-900/95 text-slate-200 border-slate-700 hover:bg-slate-800"
                 }`}
               >
-                <Layers className="h-3.5 w-3.5" />
+                <Layers className="h-3.5 w-3.5 text-emerald-400" />
                 <span>Layers</span>
               </button>
 
               {showLayerMenu && (
-                <div className="absolute left-0 top-full mt-1.5 w-56 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-2.5 shadow-2xl z-50 text-xs space-y-1.5 text-slate-200">
-                  <div className="font-bold text-[11px] text-slate-400 uppercase tracking-wider px-1 pb-1 border-b border-slate-800">
-                    Spatial Overlays
+                <div className="absolute left-0 top-full mt-1.5 w-60 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-2.5 shadow-2xl z-[1100] text-xs space-y-1.5 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="font-bold text-[11px] text-slate-400 uppercase tracking-wider px-1 pb-1 border-b border-slate-800 flex items-center justify-between">
+                    <span>Spatial Overlays</span>
+                    <button type="button" onClick={() => setShowLayerMenu(false)} className="text-slate-400 hover:text-white">
+                      <X className="h-3 w-3" />
+                    </button>
                   </div>
-                  <label className="flex items-center justify-between p-1.5 rounded hover:bg-slate-800/80 cursor-pointer">
+                  <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
                     <span className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-xs bg-[#138808]" />
                       Cadastral Parcels
@@ -668,7 +669,7 @@ export function LeafletParcelMap({
                       className="rounded accent-[#138808]"
                     />
                   </label>
-                  <label className="flex items-center justify-between p-1.5 rounded hover:bg-slate-800/80 cursor-pointer">
+                  <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
                     <span className="flex items-center gap-2">
                       <span className="h-0.5 w-3 bg-blue-500" />
                       RoW Centerline
@@ -680,10 +681,10 @@ export function LeafletParcelMap({
                       className="rounded accent-blue-500"
                     />
                   </label>
-                  <label className="flex items-center justify-between p-1.5 rounded hover:bg-slate-800/80 cursor-pointer">
+                  <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
                     <span className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-xs bg-blue-500/40 border border-blue-400" />
-                      Statutory 60m RoW Buffer
+                      60m Statutory RoW Buffer
                     </span>
                     <input
                       type="checkbox"
@@ -692,7 +693,7 @@ export function LeafletParcelMap({
                       className="rounded accent-blue-500"
                     />
                   </label>
-                  <label className="flex items-center justify-between p-1.5 rounded hover:bg-slate-800/80 cursor-pointer">
+                  <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
                     <span className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-xs bg-slate-500/30 border border-slate-400" />
                       Village Boundaries
@@ -704,7 +705,7 @@ export function LeafletParcelMap({
                       className="rounded accent-slate-400"
                     />
                   </label>
-                  <label className="flex items-center justify-between p-1.5 rounded hover:bg-slate-800/80 cursor-pointer">
+                  <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
                     <span className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500/40 border border-emerald-400" />
                       Eco-Sensitive Buffer
@@ -720,8 +721,8 @@ export function LeafletParcelMap({
               )}
             </div>
 
-            {/* Measurement Tools Suite */}
-            <div className="flex items-center gap-1 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-0.5 rounded-lg shadow-md text-xs">
+            {/* Measurement Tools */}
+            <div className="flex items-center gap-1 bg-slate-900/95 backdrop-blur-md border border-slate-700/90 p-0.5 rounded-xl shadow-lg text-xs">
               <button
                 type="button"
                 onClick={() => {
@@ -731,12 +732,12 @@ export function LeafletParcelMap({
                     setMeasureMode("DISTANCE");
                   }
                 }}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                   measureMode === "DISTANCE"
-                    ? "bg-amber-500 text-slate-950 font-bold shadow-xs"
-                    : "text-slate-300 hover:bg-slate-800"
+                    ? "bg-amber-500 text-slate-950 shadow-xs"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800"
                 }`}
-                title="Measure distance between clicks"
+                title="Measure linear distance between points"
               >
                 <Ruler className="h-3 w-3" />
                 <span className="hidden sm:inline">Distance</span>
@@ -750,12 +751,12 @@ export function LeafletParcelMap({
                     setMeasureMode("AREA");
                   }
                 }}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                   measureMode === "AREA"
-                    ? "bg-amber-500 text-slate-950 font-bold shadow-xs"
-                    : "text-slate-300 hover:bg-slate-800"
+                    ? "bg-amber-500 text-slate-950 shadow-xs"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800"
                 }`}
-                title="Measure area of enclosed polygon"
+                title="Calculate enclosed polygon area (Acres / Bighas)"
               >
                 <Square className="h-3 w-3" />
                 <span className="hidden sm:inline">Area</span>

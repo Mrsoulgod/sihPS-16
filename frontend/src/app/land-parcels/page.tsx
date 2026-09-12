@@ -213,7 +213,7 @@ export default function LandParcelsPage() {
               Click any parcel to inspect khasra details
             </span>
           </div>
-          <div className={`${viewMode === "MAP" ? "h-[560px]" : "h-[380px]"} w-full rounded-lg overflow-hidden border border-slate-200 shadow-inner`}>
+          <div className={`${viewMode === "MAP" ? "h-[580px]" : "h-[460px]"} w-full rounded-lg overflow-hidden border border-slate-200 shadow-inner`}>
             <LeafletParcelMap
               geoJson={gisData}
               height="100%"
