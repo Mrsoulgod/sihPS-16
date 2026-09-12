@@ -597,60 +597,151 @@ export function LeafletParcelMap({
         position: "relative",
       }}
     >
-      {/* 1. Top HUD Bar & Tools - Fixed z-[1000] so it is ALWAYS visible and never hidden by tiles or controls */}
+      {/* 1. Sleek Single-Row Top Control Dock */}
       {showControls && (
-        <div className="absolute top-2.5 left-2.5 right-2.5 z-[1000] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-          {/* Left: Corridor Layer Badge, Quick Search, Layers & Measurement */}
-          <div className="flex items-center gap-1.5 pointer-events-auto flex-wrap">
-            <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700/90 px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-2 text-xs text-white">
-              <Layers className="h-4 w-4 text-[#138808]" />
-              <span className="font-bold whitespace-nowrap">
-                {title || effectiveData.metadata?.project_title?.slice(0, 28) || "Cadastral Layer"}
-              </span>
-              <span className="text-slate-600">|</span>
-              <span className="text-[10px] text-emerald-400 font-mono whitespace-nowrap">
-                {effectiveData.features.filter((f) => f.properties?.layer_type === "PARCEL" || !f.properties?.layer_type).length} Parcels
-              </span>
+        <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between pointer-events-none gap-2">
+          {/* Top-Left: Clean Corridor Badge */}
+          <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-2 text-xs text-white">
+            <Compass className="h-4 w-4 text-[#138808]" />
+            <span className="font-bold whitespace-nowrap">
+              {title || effectiveData.metadata?.project_title?.slice(0, 26) || "Cadastral Layer"}
+            </span>
+            <span className="text-slate-600">|</span>
+            <span className="text-[10px] text-emerald-400 font-mono font-bold whitespace-nowrap">
+              {effectiveData.features.filter((f) => f.properties?.layer_type === "PARCEL" || !f.properties?.layer_type).length} Parcels
+            </span>
+          </div>
+
+          {/* Top-Right: Integrated Single-Row Control Bar */}
+          <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1 rounded-xl shadow-lg flex items-center gap-1.5 text-xs">
+            {/* Basemap Switcher */}
+            <div className="flex items-center bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60">
+              <button
+                type="button"
+                onClick={() => switchBaseMap("SATELLITE")}
+                className={`flex items-center gap-1 px-2 py-1 rounded font-bold text-[11px] transition-all ${
+                  activeBaseMap === "SATELLITE"
+                    ? "bg-[#138808] text-white shadow-xs"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
+                }`}
+                title="Satellite Imagery + Reference Labels"
+              >
+                <Globe className="h-3 w-3" />
+                <span className="hidden sm:inline">Satellite</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => switchBaseMap("STREET")}
+                className={`flex items-center gap-1 px-2 py-1 rounded font-bold text-[11px] transition-all ${
+                  activeBaseMap === "STREET"
+                    ? "bg-[#138808] text-white shadow-xs"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
+                }`}
+                title="Street Map (OSM)"
+              >
+                <MapIcon className="h-3 w-3" />
+                <span className="hidden sm:inline">Street</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => switchBaseMap("TOPO")}
+                className={`flex items-center gap-1 px-2 py-1 rounded font-bold text-[11px] transition-all ${
+                  activeBaseMap === "TOPO"
+                    ? "bg-[#138808] text-white shadow-xs"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
+                }`}
+                title="Topographic Contours"
+              >
+                <span className="hidden sm:inline">Topo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => switchBaseMap("DARK")}
+                className={`flex items-center gap-1 px-2 py-1 rounded font-bold text-[11px] transition-all ${
+                  activeBaseMap === "DARK"
+                    ? "bg-[#138808] text-white shadow-xs"
+                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
+                }`}
+                title="Dark Matter Canvas"
+              >
+                <span className="hidden sm:inline">Dark</span>
+              </button>
             </div>
 
-            {/* Quick Search */}
-            <div className="relative hidden xl:block">
-              <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search Khasra / ULPIN..."
-                value={searchKhasra}
-                onChange={(e) => setSearchKhasra(e.target.value)}
-                className="pl-8 pr-7 py-1.5 rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700/90 text-xs text-white placeholder-slate-400 shadow-lg focus:outline-none focus:ring-2 focus:ring-[#138808] w-48"
-              />
-              {searchKhasra && (
-                <button
-                  type="button"
-                  onClick={() => setSearchKhasra("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </div>
+            <div className="h-4 w-px bg-slate-700 mx-0.5" />
+
+            {/* Measurement Tools */}
+            <button
+              type="button"
+              onClick={() => {
+                if (measureMode === "DISTANCE") resetMeasurement();
+                else {
+                  resetMeasurement();
+                  setMeasureMode("DISTANCE");
+                }
+              }}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                measureMode === "DISTANCE"
+                  ? "bg-amber-500 text-slate-950 shadow-xs"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+              title="Distance Ruler"
+            >
+              <Ruler className="h-3 w-3" />
+              <span className="hidden md:inline">Ruler</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (measureMode === "AREA") resetMeasurement();
+                else {
+                  resetMeasurement();
+                  setMeasureMode("AREA");
+                }
+              }}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                measureMode === "AREA"
+                  ? "bg-amber-500 text-slate-950 shadow-xs"
+                  : "text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+              title="Area Calculator (Acres / Bighas)"
+            >
+              <Square className="h-3 w-3" />
+              <span className="hidden md:inline">Area</span>
+            </button>
+
+            {measureMode !== "NONE" && (
+              <button
+                type="button"
+                onClick={resetMeasurement}
+                className="p-1 rounded text-rose-400 hover:bg-rose-950/50"
+                title="Clear measurement"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            )}
+
+            <div className="h-4 w-px bg-slate-700 mx-0.5" />
 
             {/* Layer Visibility Toggle */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowLayerMenu(!showLayerMenu)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold backdrop-blur-md border shadow-lg transition-all ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold transition-all ${
                   showLayerMenu
-                    ? "bg-[#138808] text-white border-green-500 shadow-emerald-950/50"
-                    : "bg-slate-900/95 text-slate-200 border-slate-700 hover:bg-slate-800"
+                    ? "bg-[#138808] text-white"
+                    : "text-slate-300 hover:text-white hover:bg-slate-800"
                 }`}
+                title="Toggle Spatial Layers"
               >
-                <Layers className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Layers</span>
+                <Layers className="h-3 w-3 text-emerald-400" />
+                <span className="hidden md:inline">Layers</span>
               </button>
 
               {showLayerMenu && (
-                <div className="absolute left-0 top-full mt-1.5 w-60 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-2.5 shadow-2xl z-[1100] text-xs space-y-1.5 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 top-full mt-1.5 w-60 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-2.5 shadow-2xl z-[1100] text-xs space-y-1.5 text-slate-200 animate-in fade-in zoom-in-95 duration-150">
                   <div className="font-bold text-[11px] text-slate-400 uppercase tracking-wider px-1 pb-1 border-b border-slate-800 flex items-center justify-between">
                     <span>Spatial Overlays</span>
                     <button type="button" onClick={() => setShowLayerMenu(false)} className="text-slate-400 hover:text-white">
@@ -684,7 +775,7 @@ export function LeafletParcelMap({
                   <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
                     <span className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-xs bg-blue-500/40 border border-blue-400" />
-                      60m Statutory RoW Buffer
+                      60m RoW Buffer
                     </span>
                     <input
                       type="checkbox"
@@ -696,7 +787,7 @@ export function LeafletParcelMap({
                   <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
                     <span className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-xs bg-slate-500/30 border border-slate-400" />
-                      Village Boundaries
+                      Village Bounds
                     </span>
                     <input
                       type="checkbox"
@@ -708,7 +799,7 @@ export function LeafletParcelMap({
                   <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
                     <span className="flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-xs bg-emerald-500/40 border border-emerald-400" />
-                      Eco-Sensitive Buffer
+                      Eco-Sensitive Zone
                     </span>
                     <input
                       type="checkbox"
@@ -721,121 +812,13 @@ export function LeafletParcelMap({
               )}
             </div>
 
-            {/* Measurement Tools */}
-            <div className="flex items-center gap-1 bg-slate-900/95 backdrop-blur-md border border-slate-700/90 p-0.5 rounded-xl shadow-lg text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  if (measureMode === "DISTANCE") resetMeasurement();
-                  else {
-                    resetMeasurement();
-                    setMeasureMode("DISTANCE");
-                  }
-                }}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                  measureMode === "DISTANCE"
-                    ? "bg-amber-500 text-slate-950 shadow-xs"
-                    : "text-slate-300 hover:text-white hover:bg-slate-800"
-                }`}
-                title="Measure linear distance between points"
-              >
-                <Ruler className="h-3 w-3" />
-                <span className="hidden sm:inline">Distance</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (measureMode === "AREA") resetMeasurement();
-                  else {
-                    resetMeasurement();
-                    setMeasureMode("AREA");
-                  }
-                }}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
-                  measureMode === "AREA"
-                    ? "bg-amber-500 text-slate-950 shadow-xs"
-                    : "text-slate-300 hover:text-white hover:bg-slate-800"
-                }`}
-                title="Calculate enclosed polygon area (Acres / Bighas)"
-              >
-                <Square className="h-3 w-3" />
-                <span className="hidden sm:inline">Area</span>
-              </button>
-              {measureMode !== "NONE" && (
-                <button
-                  type="button"
-                  onClick={resetMeasurement}
-                  className="p-1 rounded text-rose-400 hover:bg-rose-950/50"
-                  title="Clear measurement"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Basemap Switcher & Actions */}
-          <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-900/95 backdrop-blur-md border border-slate-700 p-1 rounded-xl shadow-lg text-xs">
-            <div className="flex items-center bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/60">
-              <button
-                type="button"
-                onClick={() => switchBaseMap("SATELLITE")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] transition-all ${
-                  activeBaseMap === "SATELLITE"
-                    ? "bg-[#138808] text-white shadow-sm ring-1 ring-emerald-400"
-                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
-                }`}
-                title="High-Resolution Satellite Imagery + Labels"
-              >
-                <Globe className="h-3 w-3" />
-                <span>Satellite</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => switchBaseMap("STREET")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] transition-all ${
-                  activeBaseMap === "STREET"
-                    ? "bg-[#138808] text-white shadow-sm ring-1 ring-emerald-400"
-                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
-                }`}
-                title="OpenStreetMap Standard Street Layer"
-              >
-                <MapIcon className="h-3 w-3" />
-                <span>Street</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => switchBaseMap("TOPO")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] transition-all ${
-                  activeBaseMap === "TOPO"
-                    ? "bg-[#138808] text-white shadow-sm ring-1 ring-emerald-400"
-                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
-                }`}
-                title="Topographic Elevation Contours"
-              >
-                <Compass className="h-3 w-3" />
-                <span>Topo</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => switchBaseMap("DARK")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[11px] transition-all ${
-                  activeBaseMap === "DARK"
-                    ? "bg-[#138808] text-white shadow-sm ring-1 ring-emerald-400"
-                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
-                }`}
-                title="Dark Matter Canvas"
-              >
-                <span>Dark</span>
-              </button>
-            </div>
-
             <div className="h-4 w-px bg-slate-700 mx-0.5" />
 
+            {/* Recenter & Export */}
             <button
               type="button"
               onClick={handleRecenter}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700/60"
+              className="p-1 rounded text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
               title="Fit to project corridor bounds"
             >
               <Maximize2 className="h-3.5 w-3.5" />
@@ -843,7 +826,7 @@ export function LeafletParcelMap({
             <button
               type="button"
               onClick={handleExportGeoJson}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 transition-colors border border-slate-700/60"
+              className="p-1 rounded text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 transition-colors"
               title="Export Corridor GeoJSON"
             >
               <Download className="h-3.5 w-3.5" />
