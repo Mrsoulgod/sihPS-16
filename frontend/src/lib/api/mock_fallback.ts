@@ -20,6 +20,7 @@ import {
 } from "../types/analytics";
 import { DashboardSummaryData } from "../types/dashboard";
 import { UserSummary, LoginResponseData } from "../types/auth";
+import { getGisGeoJsonByProjectId, GIS_NH48_PKG4 } from "../data/gis_datasets";
 
 // -------------------------------------------------------------
 // 0. CANONICAL AUTH & PERSONA DATA
@@ -1747,9 +1748,15 @@ export function handleMockApiRequest<T>(
 
   // 4. Land Parcels & GIS
   if (clean.startsWith("/gis") || clean.startsWith("/parcels/gis")) {
+    let projectId = "PRJ-NH48-PKG4";
+    const match = clean.match(/\/projects\/([^\/]+)/);
+    if (match && match[1]) {
+      projectId = match[1];
+    }
+    const gisData = getGisGeoJsonByProjectId(projectId);
     return {
       success: true,
-      data: MOCK_GEOJSON_FEATURES as unknown as T,
+      data: gisData as unknown as T,
       message: "GIS spatial features retrieved.",
       metadata: { timestamp: new Date().toISOString(), request_id: `mock-gis-${Date.now()}` },
     };
