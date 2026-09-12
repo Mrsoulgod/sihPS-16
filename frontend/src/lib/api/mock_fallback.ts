@@ -3,6 +3,7 @@ import { ProjectListItem, ProjectDetailResponse } from "../types/project";
 import { ActionCenterSummaryResponse, ActionItemResponse, ActionWorkspaceResponse, AvailableActionOption } from "../types/action_center";
 import { StageDefinition, ProjectWorkflowTimelineResponse, WorkflowTaskItem } from "../types/workflow";
 import { ParcelListResponse, ParcelDetailResponse, GisGeoJsonFeatureCollection } from "../types/parcel";
+import { getGisGeoJsonByProjectId } from "../data/gis_datasets";
 import { CompensationAssessmentListItem, CompensationAssessmentDetail, CompensationCalculationBreakdown } from "../types/compensation";
 import { AwardListItem, AwardDetail } from "../types/award";
 import { DisbursementListItem, DisbursementDetail, FinancialReconciliationSummary } from "../types/disbursement";
@@ -1747,9 +1748,13 @@ export function handleMockApiRequest<T>(
 
   // 4. Land Parcels & GIS
   if (clean.startsWith("/gis") || clean.startsWith("/parcels/gis")) {
+    const projMatch = clean.match(/\/projects\/([^\/]+)/);
+    const projectId = projMatch ? projMatch[1] : undefined;
+    const gisData = getGisGeoJsonByProjectId(projectId) || MOCK_GEOJSON_FEATURES;
+
     return {
       success: true,
-      data: MOCK_GEOJSON_FEATURES as unknown as T,
+      data: gisData as unknown as T,
       message: "GIS spatial features retrieved.",
       metadata: { timestamp: new Date().toISOString(), request_id: `mock-gis-${Date.now()}` },
     };

@@ -110,37 +110,58 @@ export interface GisGeoJsonFeature {
   type: "Feature";
   id: string;
   geometry: {
-    type: "Polygon";
-    coordinates: number[][][];
+    type: "Polygon" | "LineString" | "MultiPolygon" | "Point";
+    coordinates: any;
   };
   properties: {
     parcel_id: string;
+    ulpin?: string;
     khasra_number: string;
     khata_number: string;
     village_name: string;
+    tehsil_name?: string;
+    district_name?: string;
+    state_name?: string;
     total_area_acres: number;
     acquired_area_acres: number;
+    area_sqm?: number;
     land_type: string;
     acquisition_status: string;
     status_label: string;
     verification_status: string;
     is_disputed: boolean;
+    dispute_reason?: string;
+    owner_name?: string;
+    owner_count?: number;
+    circle_rate_sqm?: number;
+    assessed_compensation_inr?: number;
+    trees_count?: number;
+    structures_count?: number;
+    wells_count?: number;
     centroid: [number, number];
     current_stage: string;
     fillColor: string;
     color: string;
     fillOpacity: number;
     weight: number;
+    layer_type?: "PARCEL" | "ROW_CENTERLINE" | "ROW_BUFFER" | "VILLAGE_BOUNDARY" | "ECO_SENSITIVE";
+    chainage_km?: string;
   };
 }
 
 export interface GisGeoJsonFeatureCollection {
   type: "FeatureCollection";
   features: GisGeoJsonFeature[];
-  metadata: {
-    project_id: string;
-    parcel_count: number;
-    center: [number, number];
-    bounds: [[number, number], [number, number]];
+  metadata?: {
+    project_id?: string;
+    project_title?: string;
+    total_parcels?: number;
+    parcel_count?: number;
+    center?: [number, number];
+    bounds?: [[number, number], [number, number]];
+    row_width_meters?: number;
+    survey_datum?: string;
+    epsg?: string;
   };
 }
+
