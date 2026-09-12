@@ -21,6 +21,7 @@ import { DistrictAcquisitionControl } from "@/components/dashboard/DistrictAcqui
 import { ProjectAgencyControl } from "@/components/dashboard/ProjectAgencyControl";
 import { FieldOfficerDashboard } from "@/components/dashboard/FieldOfficerDashboard";
 import { SocialOfficerDashboard } from "@/components/dashboard/SocialOfficerDashboard";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   RefreshCw,
@@ -44,12 +45,27 @@ import {
   TrendingUp,
   Map,
   Shield,
+  Maximize2,
 } from "lucide-react";
+
+// Dynamically import Leaflet map to disable SSR
+const LeafletParcelMap = dynamic(
+  () => import("@/components/gis/LeafletParcelMap").then((mod) => mod.LeafletParcelMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-96 w-full rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 animate-pulse border border-slate-200">
+        Loading National Spatial Cadastre Engine...
+      </div>
+    ),
+  }
+);
 
 type CommandTab =
   | "command-overview"
   | "funnel"
   | "states"
+  | "gis"
   | "critical-risk"
   | "attention"
   | "trends"
@@ -195,6 +211,7 @@ export default function DashboardPage() {
 
   const commandTabs = [
     { id: "command-overview", label: "National Command", icon: LayoutDashboard, badge: "11 KPIs" },
+    { id: "gis", label: "National GIS Map", icon: Compass, badge: "Spatial Cadastre" },
     { id: "funnel", label: "Acquisition Funnel", icon: Compass, badge: "12 Stages" },
     { id: "states", label: "State Performance", icon: Layers, badge: `${data.state_progress?.length || 0} States` },
     { id: "critical-risk", label: "Critical & Risk", icon: AlertTriangle, badge: `${data.status_breakdown?.at_risk || 2} Risk` },
@@ -383,6 +400,40 @@ export default function DashboardPage() {
             states={data.state_progress}
             onSelectState={(stateId) => setSelectedStateFilter(stateId)}
           />
+        </div>
+      )}
+
+      {/* VIEW: National GIS Spatial Cadastre */}
+      {(activeTab === "gis" || activeTab === "all") && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Compass className="h-5 w-5 text-[#138808]" />
+                  <h3 className="text-base font-bold text-slate-900 font-serif">
+                    National Corridor Cadastre & PostGIS Overlays
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Live satellite, topographical, and street spatial layers with multi-village khasra polygon boundaries.
+                </p>
+              </div>
+
+              <Link
+                href="/gis"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#138808] text-white text-xs font-bold hover:bg-emerald-700 transition shadow-2xs self-start sm:self-auto"
+              >
+                <span>Fullscreen GIS Portal</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            {/* Embedded Interactive Map */}
+            <div className="h-[480px] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+              <LeafletParcelMap height="100%" title="National Corridor Cadastre" />
+            </div>
+          </div>
         </div>
       )}
 

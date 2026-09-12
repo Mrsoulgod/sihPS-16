@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { DashboardSummaryData, AgencyActionItem, AgencyProjectItem } from "@/lib/types/dashboard";
 import { useAuth } from "@/lib/hooks/useAuth";
+import dynamic from "next/dynamic";
 import {
   Building2,
   FilePlus,
@@ -26,7 +27,21 @@ import {
   Filter,
   Eye,
   Edit3,
+  ArrowRight,
 } from "lucide-react";
+
+// Dynamically import Leaflet map to disable SSR
+const LeafletParcelMap = dynamic(
+  () => import("@/components/gis/LeafletParcelMap").then((mod) => mod.LeafletParcelMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-96 w-full rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 animate-pulse border border-slate-200">
+        Loading Agency Corridor GIS Engine...
+      </div>
+    ),
+  }
+);
 
 interface ProjectAgencyControlProps {
   data: DashboardSummaryData;
@@ -533,6 +548,32 @@ export function ProjectAgencyControl({
             <ShieldAlert className="h-4 w-4 text-slate-500 shrink-0" />
             <span>Citizen Aadhaar and private beneficiary accounts are masked for agency privacy compliance.</span>
           </div>
+        </div>
+      </div>
+
+      {/* Embedded Agency Corridor GIS Map */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Compass className="h-4 w-4 text-[#138808]" />
+              Corridor Alignment & Cadastral Parcel Map
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Demarcated Right-of-Way (RoW) corridor boundaries and khasra acquisition overlays.
+            </p>
+          </div>
+          <Link
+            href="/gis"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#138808] text-white text-xs font-bold hover:bg-emerald-700 transition shadow-2xs self-start sm:self-auto"
+          >
+            <span>National Spatial Portal</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        <div className="h-[420px] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+          <LeafletParcelMap height="100%" title="NHAI Corridor Overlay" />
         </div>
       </div>
 

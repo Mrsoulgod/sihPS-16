@@ -15,6 +15,7 @@ import { CriticalProjectsSpotlight } from "@/components/dashboard/CriticalProjec
 import { NationalTrendsCharts } from "@/components/dashboard/NationalTrendsCharts";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { QuickActionsPanel } from "@/components/dashboard/QuickActionsPanel";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -35,6 +36,19 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 
+// Dynamically import Leaflet map to disable SSR
+const LeafletParcelMap = dynamic(
+  () => import("@/components/gis/LeafletParcelMap").then((mod) => mod.LeafletParcelMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-96 w-full rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 animate-pulse border border-slate-200">
+        Loading State Spatial Cadastre Engine...
+      </div>
+    ),
+  }
+);
+
 interface StateAcquisitionControlProps {
   data: DashboardSummaryData;
   onRefresh: () => void;
@@ -43,6 +57,7 @@ interface StateAcquisitionControlProps {
 
 type StateTab =
   | "overview"
+  | "gis"
   | "districts"
   | "funnel"
   | "projects"
@@ -72,6 +87,7 @@ export function StateAcquisitionControl({
 
   const stateTabs = [
     { id: "overview", label: "State Overview", icon: LayoutDashboard, badge: "12 KPIs" },
+    { id: "gis", label: "State GIS Cadastre", icon: Compass, badge: "Spatial Maps" },
     { id: "districts", label: "District Performance", icon: Layers, badge: `${data.district_performance?.length || 4} Districts` },
     { id: "funnel", label: "Acquisition Funnel", icon: Compass, badge: "12 Stages" },
     { id: "projects", label: "State Projects", icon: Building, badge: `${data.kpis.total_projects} Projects` },
@@ -203,6 +219,39 @@ export function StateAcquisitionControl({
             </div>
             <div className="lg:col-span-2">
               <RecentActivityFeed activities={data.recent_activity} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STATE GIS CADASTRE TAB */}
+      {(activeTab === "gis" || activeTab === "all") && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Compass className="h-5 w-5 text-[#138808]" />
+                  <h3 className="text-base font-bold text-slate-900 font-serif">
+                    {stateName} State-Wide Corridor Cadastre & Parcel Demarcations
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Multi-district statutory spatial overlays, Section 19 gazette boundaries, and revenue survey alignments across {stateName}.
+                </p>
+              </div>
+
+              <Link
+                href="/gis"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#138808] text-white text-xs font-bold hover:bg-emerald-700 transition shadow-2xs self-start sm:self-auto"
+              >
+                <span>Open National GIS Engine</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            <div className="h-[480px] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+              <LeafletParcelMap height="100%" title={`${stateName} State Cadastre`} />
             </div>
           </div>
         </div>

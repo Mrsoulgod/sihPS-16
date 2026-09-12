@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useParcels } from "@/lib/hooks/useParcels";
+import { useParcels, useProjectParcelsGis } from "@/lib/hooks/useParcels";
 import { useProjects } from "@/lib/hooks/useProjects";
 import { ParcelTable } from "@/components/parcels/ParcelTable";
 import {
@@ -11,7 +12,24 @@ import {
   Filter,
   AlertTriangle,
   Building2,
+  Map,
+  Table as TableIcon,
+  Columns,
+  Compass,
 } from "lucide-react";
+
+// Dynamically import Leaflet map to disable SSR
+const LeafletParcelMap = dynamic(
+  () => import("@/components/gis/LeafletParcelMap").then((mod) => mod.LeafletParcelMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-96 w-full rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 animate-pulse border border-slate-200">
+        Loading Cadastral Spatial Map...
+      </div>
+    ),
+  }
+);
 
 export default function LandParcelsPage() {
   const router = useRouter();
@@ -19,9 +37,11 @@ export default function LandParcelsPage() {
   const [status, setStatus] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [isDisputed, setIsDisputed] = useState<boolean | undefined>(undefined);
+  const [viewMode, setViewMode] = useState<"SPLIT" | "MAP" | "TABLE">("SPLIT");
 
   const { data: projectList } = useProjects();
   const projects = projectList || [];
+  const { data: gisData } = useProjectParcelsGis(projectId || (projects[0]?.id));
 
   const {
     data: parcelList,
@@ -130,7 +150,7 @@ export default function LandParcelsPage() {
         </div>
 
         {/* Dispute Checkbox */}
-        <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer ml-auto">
+        <label className="flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
           <input
             type="checkbox"
             checked={isDisputed === true}
@@ -142,18 +162,82 @@ export default function LandParcelsPage() {
             Disputed Only ({disputedCount})
           </span>
         </label>
+
+        {/* View Mode Switcher */}
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 ml-auto">
+          <button
+            type="button"
+            onClick={() => setViewMode("SPLIT")}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition ${
+              viewMode === "SPLIT" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+            title="Split Cadastre Map and Table"
+          >
+            <Columns className="h-3.5 w-3.5 text-[#138808]" />
+            <span className="hidden sm:inline">Split View</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("MAP")}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition ${
+              viewMode === "MAP" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+            title="Full Interactive Cadastral Map"
+          >
+            <Map className="h-3.5 w-3.5 text-[#138808]" />
+            <span className="hidden sm:inline">Spatial Map</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("TABLE")}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold transition ${
+              viewMode === "TABLE" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+            }`}
+            title="Tabular Khasra Registry"
+          >
+            <TableIcon className="h-3.5 w-3.5 text-[#138808]" />
+            <span className="hidden sm:inline">Table Only</span>
+          </button>
+        </div>
       </div>
 
-      {/* Parcel Table */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
-        <ParcelTable
-          parcels={parcels}
-          isLoading={isLoading}
-          onSelectParcel={(parcelId) => {
-            router.push(`/land-parcels/${parcelId}`);
-          }}
-        />
-      </div>
+      {/* Interactive Spatial Cadastre Map (Split or Map Mode) */}
+      {(viewMode === "SPLIT" || viewMode === "MAP") && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+              <Compass className="h-4 w-4 text-[#138808]" />
+              <span>Interactive PostGIS Cadastral Overlay</span>
+            </div>
+            <span className="text-[11px] text-slate-500 font-mono">
+              Click any parcel to inspect khasra details
+            </span>
+          </div>
+          <div className={`${viewMode === "MAP" ? "h-[560px]" : "h-[380px]"} w-full rounded-lg overflow-hidden border border-slate-200 shadow-inner`}>
+            <LeafletParcelMap
+              geoJson={gisData}
+              height="100%"
+              title="Cadastral Overlay"
+              onParcelClick={(parcelId: string) => {
+                router.push(`/land-parcels/${parcelId}`);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Parcel Table (Split or Table Mode) */}
+      {(viewMode === "SPLIT" || viewMode === "TABLE") && (
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+          <ParcelTable
+            parcels={parcels}
+            isLoading={isLoading}
+            onSelectParcel={(parcelId) => {
+              router.push(`/land-parcels/${parcelId}`);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

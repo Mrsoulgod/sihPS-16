@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { DashboardSummaryResponse } from "@/lib/types/dashboard";
 import { FieldDashboardData, FieldTask } from "@/lib/types/field";
+import dynamic from "next/dynamic";
 import {
   ClipboardCheck,
   MapPin,
@@ -28,6 +29,19 @@ import {
   Info,
   ExternalLink,
 } from "lucide-react";
+
+// Dynamically import Leaflet map to disable SSR
+const LeafletParcelMap = dynamic(
+  () => import("@/components/gis/LeafletParcelMap").then((mod) => mod.LeafletParcelMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-80 w-full rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 animate-pulse border border-slate-200">
+        Loading GPS Cadastral Survey Map...
+      </div>
+    ),
+  }
+);
 
 interface FieldOfficerDashboardProps {
   data: DashboardSummaryResponse;
@@ -211,6 +225,33 @@ export function FieldOfficerDashboard({
             <span className="text-[11px] text-rose-700 font-medium ml-1.5">SLA Exceeded</span>
           </div>
           <span className="text-[10px] text-rose-600 font-medium mt-1">Immediate action needed</span>
+        </div>
+      </div>
+
+      {/* Field Surveyor Interactive GPS Cadastre Map */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Compass className="h-5 w-5 text-[#138808]" />
+              <span>Ground Truthing & Field Cadastral Map</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Assigned revenue khasras, satellite boundary pins, and physical verification progress.
+            </p>
+          </div>
+
+          <Link
+            href="/field/parcels"
+            className="text-xs font-bold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1"
+          >
+            <span>Assigned Khasra Directory</span>
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="h-[380px] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+          <LeafletParcelMap height="100%" title="Field Survey Overlay" />
         </div>
       </div>
 

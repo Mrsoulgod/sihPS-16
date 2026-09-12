@@ -15,6 +15,7 @@ import { DistrictPossessionCard } from "@/components/dashboard/DistrictPossessio
 import { DistrictRAndRCard } from "@/components/dashboard/DistrictRAndRCard";
 import { DistrictEscalationsCard } from "@/components/dashboard/DistrictEscalationsCard";
 import { DistrictProposalReviewModal } from "@/components/dashboard/DistrictProposalReviewModal";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -36,7 +37,21 @@ import {
   FileCheck2,
   Gavel,
   Calculator,
+  ArrowRight,
 } from "lucide-react";
+
+// Dynamically import Leaflet map to disable SSR
+const LeafletParcelMap = dynamic(
+  () => import("@/components/gis/LeafletParcelMap").then((mod) => mod.LeafletParcelMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-96 w-full rounded-xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 animate-pulse border border-slate-200">
+        Loading District Cadastral GIS Engine...
+      </div>
+    ),
+  }
+);
 
 interface DistrictAcquisitionControlProps {
   data: DashboardSummaryData;
@@ -46,6 +61,7 @@ interface DistrictAcquisitionControlProps {
 
 type DistrictTab =
   | "overview"
+  | "gis"
   | "actions"
   | "projects"
   | "field"
@@ -98,6 +114,12 @@ export function DistrictAcquisitionControl({
       label: "Command Overview",
       icon: LayoutDashboard,
       badge: "14 KPIs",
+    },
+    {
+      id: "gis",
+      label: "District GIS Map",
+      icon: Compass,
+      badge: "PostGIS Cadastre",
     },
     {
       id: "actions",
@@ -312,6 +334,39 @@ export function DistrictAcquisitionControl({
                 handleOpenProposal("PRJ-JAIPUR-001", "Escalate Inter-Agency Bottleneck")
               }
             />
+          </div>
+        </div>
+      )}
+
+      {/* Tab: GIS */}
+      {(activeTab === "gis" || activeTab === "all") && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Compass className="h-5 w-5 text-[#138808]" />
+                  <h3 className="text-base font-bold text-slate-900 font-serif">
+                    {districtName} District Cadastral Boundary Overlays
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Real-time spatial visualization of survey khasras, Section 11 gazette boundaries, and solatium status across {districtName}.
+                </p>
+              </div>
+
+              <Link
+                href="/gis"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#138808] text-white text-xs font-bold hover:bg-emerald-700 transition shadow-2xs self-start sm:self-auto"
+              >
+                <span>National GIS Portal</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            <div className="h-[460px] w-full rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+              <LeafletParcelMap height="100%" title={`${districtName} Cadastre`} />
+            </div>
           </div>
         </div>
       )}

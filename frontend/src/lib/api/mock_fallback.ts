@@ -1746,11 +1746,11 @@ export function handleMockApiRequest<T>(
   }
 
   // 4. Land Parcels & GIS
-  if (clean.startsWith("/parcels/gis/features") || clean.startsWith("/parcels/gis")) {
+  if (clean.startsWith("/gis") || clean.startsWith("/parcels/gis")) {
     return {
       success: true,
       data: MOCK_GEOJSON_FEATURES as unknown as T,
-      message: "GIS features retrieved.",
+      message: "GIS spatial features retrieved.",
       metadata: { timestamp: new Date().toISOString(), request_id: `mock-gis-${Date.now()}` },
     };
   }
