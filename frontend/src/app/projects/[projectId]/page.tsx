@@ -128,7 +128,8 @@ export default function ProjectDetailPage() {
   const acquired = project.total_land_acquired_acres || 0;
   const required = project.total_land_proposed_acres || 1;
   const progressPct = project.acquisition_progress_percent ?? Math.min(100, Math.round((acquired / required) * 100));
-  const currentStageObj = workflow?.stages?.find((s) => s.stage_code === workflow.current_stage);
+  const workflowStages = Array.isArray(workflow?.stages) ? workflow.stages : [];
+  const currentStageObj = workflowStages.find((s) => s.stage_code === workflow?.current_stage);
 
   // Financial calculations
   const totalAwardedCr = project.total_awarded_cr ?? 0;
@@ -449,8 +450,8 @@ export default function ProjectDetailPage() {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {workflow.stages.map((stage) => {
-              const isCurrent = stage.stage_code === workflow.current_stage;
+            {workflowStages.map((stage) => {
+              const isCurrent = stage.stage_code === workflow?.current_stage;
               return (
                 <div
                   key={stage.id}
@@ -1138,7 +1139,7 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="relative pl-6 border-l-2 border-primary-200 space-y-6 ml-2">
-            {workflow?.stages
+            {workflowStages
               .filter((s) => s.status === "COMPLETED" || s.status === "IN_PROGRESS")
               .map((s) => (
                 <div key={s.id} className="relative group">

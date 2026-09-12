@@ -1549,23 +1549,63 @@ export function handleMockApiRequest<T>(
 
   // /projects/:id
   if (clean.startsWith("/projects/") && method === "GET") {
-    const id = clean.replace("/projects/", "");
-    const project = MOCK_PROJECTS.find((p) => p.id === id || p.project_code === id) || MOCK_PROJECTS[0];
+    const id = clean.replace("/projects/", "").trim();
+    const foundProject = MOCK_PROJECTS.find((p) => p.id === id || p.project_code === id);
+    const title =
+      id === "PRJ-GUR-METRO"
+        ? "Gurugram Metro Rail Rapid Transit Corridor Extension"
+        : id === "PRJ-DAK-REW"
+        ? "Delhi-Amritsar-Katra Expressway (Haryana Spur)"
+        : id === "PRJ-WDFC-ALW"
+        ? "Western Dedicated Freight Corridor (Rewari–Alwar Section)"
+        : foundProject?.title || `${id} Infrastructure Corridor`;
+
+    const project = foundProject || {
+      id,
+      project_code: id,
+      title,
+      description: "Centrally monitored statutory acquisition corridor.",
+      sponsoring_ministry: "Ministry of Road Transport and Highways (MoRTH)",
+      implementing_agency: "National Highways Authority of India (NHAI)",
+      current_stage: "SECTION_11",
+      current_stage_name: "Section 11 Preliminary Notification",
+      primary_district_name: "Gurugram",
+      state_name: "Haryana",
+      total_land_proposed_acres: 185.0,
+      total_land_acquired_acres: 132.5,
+      acquisition_progress_percent: 71.6,
+      total_possession_acres: 115.4,
+      estimated_budget_inr_cr: 1250.0,
+      compensation_assessed_cr: 72.5,
+      compensation_disbursed_cr: 54.2,
+      disbursement_percent: 74.8,
+      total_paf_count: 142,
+      total_pdf_count: 38,
+      randr_completion_percent: 68.5,
+      risk_score: 32,
+      parcels_count: 86,
+    };
+
+    const proposed = project.total_land_proposed_acres || 185.0;
+    const possession = project.total_possession_acres || 115.4;
+    const assessedCr = project.compensation_assessed_cr || 72.5;
+    const disbursedCr = project.compensation_disbursed_cr || 54.2;
+
     const detail: ProjectDetailResponse = {
       ...project,
       primary_district_id: "DST-JAI",
       state_id: "IN-RJ",
-      possession_percent: (project.total_possession_acres / project.total_land_proposed_acres) * 100,
-      total_parcels_count: project.parcels_count,
-      verified_parcels_count: Math.round(project.parcels_count * 0.8),
-      assessed_parcels_count: Math.round(project.parcels_count * 0.65),
+      possession_percent: proposed > 0 ? (possession / proposed) * 100 : 60,
+      total_parcels_count: project.parcels_count || 86,
+      verified_parcels_count: Math.round((project.parcels_count || 86) * 0.8),
+      assessed_parcels_count: Math.round((project.parcels_count || 86) * 0.65),
       awards_count: 2,
-      disbursed_parcels_count: Math.round(project.parcels_count * 0.5),
-      possession_parcels_count: Math.round(project.parcels_count * 0.45),
-      total_assessed_compensation_cr: project.compensation_assessed_cr,
-      total_awarded_cr: project.compensation_assessed_cr * 0.9,
-      total_disbursed_compensation_cr: project.compensation_disbursed_cr,
-      outstanding_compensation_cr: project.compensation_assessed_cr - project.compensation_disbursed_cr,
+      disbursed_parcels_count: Math.round((project.parcels_count || 86) * 0.5),
+      possession_parcels_count: Math.round((project.parcels_count || 86) * 0.45),
+      total_assessed_compensation_cr: assessedCr,
+      total_awarded_cr: assessedCr * 0.9,
+      total_disbursed_compensation_cr: disbursedCr,
+      outstanding_compensation_cr: Math.max(0, assessedCr - disbursedCr),
       created_at: "2026-01-15T10:00:00Z",
       alignment_geojson: {
         type: "FeatureCollection",
@@ -1714,10 +1754,17 @@ export function handleMockApiRequest<T>(
     };
   }
 
-  if (clean.startsWith("/workflow/timeline/")) {
+  if (clean.startsWith("/workflow/timeline") || clean.startsWith("/workflow/projects/") || clean.includes("/timeline")) {
+    const prjId = clean.includes("/projects/") ? clean.split("/projects/")[1].split("/")[0] : "PRJ-NH48-PKG4";
+    const timeline: ProjectWorkflowTimelineResponse = {
+      ...MOCK_TIMELINE,
+      project_id: prjId,
+      project_code: prjId,
+      project_title: prjId === "PRJ-GUR-METRO" ? "Gurugram Metro Rail Rapid Transit Corridor Extension" : prjId === "PRJ-DAK-REW" ? "Delhi-Amritsar-Katra Expressway (Haryana Spur)" : MOCK_TIMELINE.project_title,
+    };
     return {
       success: true,
-      data: MOCK_TIMELINE as unknown as T,
+      data: timeline as unknown as T,
       message: "Workflow timeline retrieved.",
       metadata: { timestamp: new Date().toISOString(), request_id: `mock-wf-time-${Date.now()}` },
     };
@@ -2295,6 +2342,39 @@ export function handleMockApiRequest<T>(
       data: riskOverview as unknown as T,
       message: "Risk overview loaded.",
       metadata: { timestamp: new Date().toISOString(), request_id: `mock-rsk-${Date.now()}` },
+    };
+  }
+
+  if (clean.startsWith("/risk/projects/")) {
+    const prjId = clean.replace("/risk/projects/", "").trim();
+    const isCritical = prjId === "PRJ-GUR-METRO";
+    const prjRisk: ProjectRiskDetail = {
+      project_id: prjId,
+      project_code: prjId,
+      title: prjId === "PRJ-GUR-METRO" ? "Gurugram Metro Rail Rapid Transit Corridor Extension" : "Infrastructure Corridor",
+      overall_risk_score: isCritical ? 78 : 32,
+      risk_level: isCritical ? "CRITICAL" : "MODERATE",
+      methodology_version: "RFCTLARR-v1.0 (Rule-Based Operational Indicators)",
+      top_risk_drivers: [
+        "Critical cumulative statutory timeline breach and alignment clearance lag.",
+        "Pending Section 15 objections in commercial urban zone.",
+      ],
+      decision_support_recommendations: [
+        "Convene Special CALA Lok Adalat for expedited Section 15 objection hearings.",
+        "Authorize fast-track direct benefit transfer (DBT) for verified land titles.",
+      ],
+      factors: [
+        { factor_id: "F1", factor_name: "SLA Adherence Ratio", score: 85, weight_percent: 30, weighted_contribution: 25.5, status: "CRITICAL", explanation: "Statutory SLA exceeded on Section 11 preliminary notifications.", key_indicators: ["Elapsed: 45 days", "Statutory Limit: 30 days"] },
+        { factor_id: "F2", factor_name: "Disbursement Velocity", score: 72, weight_percent: 25, weighted_contribution: 18.0, status: "HIGH", explanation: "Awarded compensation disbursement backlog.", key_indicators: ["Outstanding: ₹65.0 Cr", "DBT Cleared: 42%"] },
+        { factor_id: "F3", factor_name: "R&R Settlement Ratio", score: 65, weight_percent: 25, weighted_contribution: 16.25, status: "HIGH", explanation: "Rehabilitation colony allotment pending.", key_indicators: ["PAFs: 142", "Settled: 52"] },
+        { factor_id: "F4", factor_name: "Litigation & Dispute Density", score: 55, weight_percent: 20, weighted_contribution: 11.0, status: "MODERATE", explanation: "High Court stay on commercial khasras.", key_indicators: ["Disputed Parcels: 4", "Stay Orders: 2"] },
+      ],
+    };
+    return {
+      success: true,
+      data: prjRisk as unknown as T,
+      message: "Project risk detail loaded.",
+      metadata: { timestamp: new Date().toISOString(), request_id: `mock-prj-risk-${Date.now()}` },
     };
   }
 

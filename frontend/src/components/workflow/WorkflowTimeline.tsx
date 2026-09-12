@@ -21,11 +21,14 @@ interface WorkflowTimelineProps {
 }
 
 export function WorkflowTimeline({ timeline, onOpenTransitionModal }: WorkflowTimelineProps) {
-  const currentStage = timeline.stages.find((s) => s.stage_code === timeline.current_stage);
+  const stages = Array.isArray(timeline?.stages) ? timeline.stages : [];
+  const currentStage = stages.find((s) => s.stage_code === timeline?.current_stage) || stages[0];
   const [justTransitioned, setJustTransitioned] = useState(false);
 
-  const isCurrentUserAuthorized = timeline.can_current_user_transition && timeline.allowed_transitions.length > 0;
+  const allowedTransitions = Array.isArray(timeline?.allowed_transitions) ? timeline.allowed_transitions : [];
+  const isCurrentUserAuthorized = Boolean(timeline?.can_current_user_transition && allowedTransitions.length > 0);
   const primaryRole = currentStage?.assigned_role || "Authorized Authority";
+  const overallProgress = timeline?.overall_progress_percent ?? 0;
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-6">
@@ -41,7 +44,7 @@ export function WorkflowTimeline({ timeline, onOpenTransitionModal }: WorkflowTi
             </span>
           </div>
           <h3 className="text-lg font-bold font-serif text-slate-900 mt-1">
-            {timeline.project_title} ({timeline.project_code})
+            {timeline?.project_title || "Corridor Workflow"} ({timeline?.project_code || "PRJ"})
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
             Real-time compliance monitoring, statutory SLA tracking, and authorized stage transitions
@@ -50,7 +53,7 @@ export function WorkflowTimeline({ timeline, onOpenTransitionModal }: WorkflowTi
 
         {/* Transition Action Trigger */}
         <div className="flex items-center gap-2 shrink-0">
-          {timeline.overall_progress_percent >= 100 ? (
+          {overallProgress >= 100 ? (
             <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md bg-emerald-100 border border-emerald-300 text-emerald-900 font-bold text-xs">
               <CheckCircle2 className="h-4 w-4 text-emerald-700" />
               <span>✓ All 12 Stages Completed</span>
