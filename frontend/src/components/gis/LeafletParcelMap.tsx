@@ -50,7 +50,7 @@ export interface LeafletParcelMapProps {
 
 export const DEFAULT_FALLBACK_GIS = GIS_NH48_PKG4;
 
-type BaseMapType = "STREET" | "SATELLITE" | "TOPO" | "DARK";
+type BaseMapType = "STREET" | "SATELLITE" | "DARK";
 type MeasureMode = "NONE" | "DISTANCE" | "AREA";
 
 export function LeafletParcelMap({
@@ -543,12 +543,6 @@ export function LeafletParcelMap({
         maxZoom: 19,
       }).addTo(map);
       baseTileLayerRef.current = streetLayer;
-    } else if (type === "TOPO") {
-      const topoLayer = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, SRTM | Style: OpenTopoMap',
-        maxZoom: 19,
-      }).addTo(map);
-      baseTileLayerRef.current = topoLayer;
     } else if (type === "DARK") {
       const darkLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
         attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -619,7 +613,7 @@ export function LeafletParcelMap({
               <button
                 type="button"
                 onClick={() => switchBaseMap("SATELLITE")}
-                className={`flex items-center gap-1 px-2 py-1 rounded font-bold text-[11px] transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded font-bold text-[11px] transition-all ${
                   activeBaseMap === "SATELLITE"
                     ? "bg-[#138808] text-white shadow-xs"
                     : "text-slate-300 hover:text-white hover:bg-slate-700/60"
@@ -632,7 +626,7 @@ export function LeafletParcelMap({
               <button
                 type="button"
                 onClick={() => switchBaseMap("STREET")}
-                className={`flex items-center gap-1 px-2 py-1 rounded font-bold text-[11px] transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded font-bold text-[11px] transition-all ${
                   activeBaseMap === "STREET"
                     ? "bg-[#138808] text-white shadow-xs"
                     : "text-slate-300 hover:text-white hover:bg-slate-700/60"
@@ -644,20 +638,8 @@ export function LeafletParcelMap({
               </button>
               <button
                 type="button"
-                onClick={() => switchBaseMap("TOPO")}
-                className={`flex items-center gap-1 px-2 py-1 rounded font-bold text-[11px] transition-all ${
-                  activeBaseMap === "TOPO"
-                    ? "bg-[#138808] text-white shadow-xs"
-                    : "text-slate-300 hover:text-white hover:bg-slate-700/60"
-                }`}
-                title="Topographic Contours"
-              >
-                <span className="hidden sm:inline">Topo</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => switchBaseMap("DARK")}
-                className={`flex items-center gap-1 px-2 py-1 rounded font-bold text-[11px] transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded font-bold text-[11px] transition-all ${
                   activeBaseMap === "DARK"
                     ? "bg-[#138808] text-white shadow-xs"
                     : "text-slate-300 hover:text-white hover:bg-slate-700/60"

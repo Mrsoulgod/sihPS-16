@@ -216,9 +216,9 @@ export default function GisMapPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Project Selector */}
-          <div className="flex items-center gap-2 bg-slate-50 border border-gray-200 px-3 py-1.5 rounded-xl">
+        <div className="flex flex-col gap-2 w-full lg:w-auto lg:min-w-[380px] xl:min-w-[420px]">
+          {/* Project Selector (Fills width) */}
+          <div className="w-full flex items-center gap-2 bg-slate-50 border border-gray-200 px-3 py-2 rounded-xl shadow-2xs hover:border-gray-300 transition-colors">
             <Building2 className="h-4 w-4 text-gray-500 shrink-0" />
             <select
               value={activeProjectId}
@@ -226,53 +226,53 @@ export default function GisMapPage() {
                 setSelectedProjectId(e.target.value);
                 setSelectedKhasraId(undefined);
               }}
-              className="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer min-w-[200px]"
+              className="w-full bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.project_code} — {p.title.slice(0, 26)}...
+                  {p.project_code} — {p.title.slice(0, 32)}...
                 </option>
               ))}
             </select>
           </div>
 
-          {/* View Switcher Pills */}
-          <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200">
+          {/* View Switcher Pills (Fills width evenly across all 3 buttons) */}
+          <div className="w-full bg-slate-100 p-1 rounded-xl flex items-center gap-1 border border-slate-200 shadow-2xs">
             <button
               type="button"
               onClick={() => setViewMode("SPATIAL")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === "SPATIAL"
                   ? "bg-[#138808] text-white shadow-xs"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
               }`}
             >
-              <MapIcon className="h-3.5 w-3.5" />
-              <span>Spatial Map</span>
+              <MapIcon className="h-3.5 w-3.5 shrink-0" />
+              <span className="whitespace-nowrap">Spatial Map</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode("TABLE")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === "TABLE"
                   ? "bg-[#138808] text-white shadow-xs"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
               }`}
             >
-              <TableIcon className="h-3.5 w-3.5" />
-              <span>Cadastre Table</span>
+              <TableIcon className="h-3.5 w-3.5 shrink-0" />
+              <span className="whitespace-nowrap">Cadastre Table</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode("SPLIT")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 viewMode === "SPLIT"
                   ? "bg-[#138808] text-white shadow-xs"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
               }`}
             >
-              <Columns2 className="h-3.5 w-3.5" />
-              <span>Split View</span>
+              <Columns2 className="h-3.5 w-3.5 shrink-0" />
+              <span className="whitespace-nowrap">Split View</span>
             </button>
           </div>
         </div>
